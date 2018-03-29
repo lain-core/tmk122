@@ -1,0 +1,1148 @@
+   1               		.file	"descriptor.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.CALLBACK_USB_GetDescriptor,"ax",@progbits
+  11               	.global	CALLBACK_USB_GetDescriptor
+  13               	CALLBACK_USB_GetDescriptor:
+  14               	.LFB100:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c"
+   1:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /* 
+   2:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * Copyright 2012 Jun Wako <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * This file is based on:
+   4:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *     LUFA-120219/Demos/Device/Lowlevel/KeyboardMouse
+   5:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *     LUFA-120219/Demos/Device/Lowlevel/GenericHID
+   6:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  */
+   7:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+   8:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*
+   9:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****              LUFA Library
+  10:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      Copyright (C) Dean Camera, 2012.
+  11:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  12:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   dean [at] fourwalledcubicle [dot] com
+  13:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****            www.lufa-lib.org
+  14:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** */
+  15:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  16:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*
+  17:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+  18:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   Copyright 2010  Denver Gingerich (denver [at] ossguy [dot] com)
+  19:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  20:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   Permission to use, copy, modify, distribute, and sell this
+  21:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   software and its documentation for any purpose is hereby granted
+  22:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   without fee, provided that the above copyright notice appear in
+  23:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   all copies and that both that the copyright notice and this
+  24:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   permission notice and warranty disclaimer appear in supporting
+  25:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   documentation, and that the name of the author not be used in
+  26:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   advertising or publicity pertaining to distribution of the
+  27:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   software without specific, written prior permission.
+  28:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  29:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   The author disclaim all warranties with regard to this
+  30:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   software, including all implied warranties of merchantability
+  31:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   and fitness.  In no event shall the author be liable for any
+  32:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   special, indirect or consequential damages or any damages
+  33:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   whatsoever resulting from loss of use, data or profits, whether
+  34:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   in an action of contract, negligence or other tortious action,
+  35:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   arising out of or in connection with the use or performance of
+  36:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****   this software.
+  37:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** */
+  38:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  39:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #include "util.h"
+  40:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #include "report.h"
+  41:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #include "descriptor.h"
+  42:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  43:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  44:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*******************************************************************************
+  45:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * HID Report Descriptors
+  46:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  ******************************************************************************/
+  47:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_HIDReport_Datatype_t PROGMEM KeyboardReport[] =
+  48:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+  49:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(8, 0x01), /* Generic Desktop */
+  50:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x06), /* Keyboard */
+  51:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+  52:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x07), /* Key Codes */
+  53:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0xE0), /* Keyboard Left Control */
+  54:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, 0xE7), /* Keyboard Right GUI */
+  55:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+  56:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+  57:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x08),
+  58:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x01),
+  59:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+  60:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  61:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x01),
+  62:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x08),
+  63:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_CONSTANT),  /* reserved */
+  64:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  65:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x08), /* LEDs */
+  66:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0x01), /* Num Lock */
+  67:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, 0x05), /* Kana */
+  68:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x05),
+  69:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x01),
+  70:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE)
+  71:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x01),
+  72:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x03),
+  73:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_OUTPUT(8, HID_IOF_CONSTANT),
+  74:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  75:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x07), /* Keyboard */
+  76:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0x00),
+  77:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, 0xFF), /* Usage ID 0x00-0xFF */
+  78:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+  79:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(16, 0x00FF), /* needs 16 bit to indicate positive value */
+  80:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x06),
+  81:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x08),
+  82:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
+  83:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+  84:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+  85:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  86:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef MOUSE_ENABLE
+  87:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_HIDReport_Datatype_t PROGMEM MouseReport[] =
+  88:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+  89:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(8, 0x01), /* Generic Desktop */
+  90:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x02), /* Mouse */
+  91:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+  92:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE(8, 0x01), /* Pointer */
+  93:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_COLLECTION(8, 0x00), /* Physical */
+  94:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  95:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE_PAGE(8, 0x09), /* Button */
+  96:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE_MINIMUM(8, 0x01),  /* Button 1 */
+  97:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE_MAXIMUM(8, 0x05),  /* Button 5 */
+  98:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MINIMUM(8, 0x00),
+  99:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+ 100:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_COUNT(8, 0x05),
+ 101:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_SIZE(8, 0x01),
+ 102:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+ 103:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_COUNT(8, 0x01),
+ 104:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_SIZE(8, 0x03),
+ 105:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_INPUT(8, HID_IOF_CONSTANT),
+ 106:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 107:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE_PAGE(8, 0x01), /* Generic Desktop */
+ 108:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE(8, 0x30), /* Usage X */
+ 109:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE(8, 0x31), /* Usage Y */
+ 110:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MINIMUM(8, -127),
+ 111:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MAXIMUM(8, 127),
+ 112:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_COUNT(8, 0x02),
+ 113:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_SIZE(8, 0x08),
+ 114:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_RELATIVE),
+ 115:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 116:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE(8, 0x38), /* Wheel */
+ 117:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MINIMUM(8, -127),
+ 118:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MAXIMUM(8, 127),
+ 119:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_COUNT(8, 0x01),
+ 120:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_SIZE(8, 0x08),
+ 121:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_RELATIVE),
+ 122:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 123:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE_PAGE(8, 0x0C), /* Consumer */
+ 124:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_USAGE(16, 0x0238), /* AC Pan (Horizontal wheel) */
+ 125:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MINIMUM(8, -127),
+ 126:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_LOGICAL_MAXIMUM(8, 127),
+ 127:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_COUNT(8, 0x01),
+ 128:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_REPORT_SIZE(8, 0x08),
+ 129:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_RELATIVE),
+ 130:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 131:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_END_COLLECTION(0),
+ 132:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+ 133:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 134:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 135:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 136:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef EXTRAKEY_ENABLE
+ 137:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_HIDReport_Datatype_t PROGMEM ExtrakeyReport[] =
+ 138:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 139:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(8, 0x01), /* Generic Desktop */
+ 140:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x80), /* System Control */
+ 141:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+ 142:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_ID(8, REPORT_ID_SYSTEM),
+ 143:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(16, 0x0081),
+ 144:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(16, 0x00B7),
+ 145:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(16, 0x0081), /* System Power Down */
+ 146:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(16, 0x00B7), /* System Display LCD Autoscale */
+ 147:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 16),
+ 148:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 1),
+ 149:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
+ 150:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+ 151:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 152:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(8, 0x0C), /* Consumer */
+ 153:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x01), /* Consumer Control */
+ 154:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+ 155:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_ID(8, REPORT_ID_CONSUMER),
+ 156:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(16, 0x0001),
+ 157:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(16, 0x029C),
+ 158:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(16, 0x0001), /* +10 */
+ 159:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(16, 0x029C), /* AC Distribute Vertically */
+ 160:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 16),
+ 161:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 1),
+ 162:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_ARRAY | HID_IOF_ABSOLUTE),
+ 163:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+ 164:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 165:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 166:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 167:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef CONSOLE_ENABLE
+ 168:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_HIDReport_Datatype_t PROGMEM ConsoleReport[] =
+ 169:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 170:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(16, 0xFF31), /* Vendor Page(PJRC Teensy compatible) */
+ 171:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x74), /* Vendor Usage(PJRC Teensy compatible) */
+ 172:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+ 173:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE(8, 0x75), /* Vendor Usage 0x75 */
+ 174:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+ 175:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(16, 0x00FF),
+ 176:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, CONSOLE_EPSIZE),
+ 177:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x08),
+ 178:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+ 179:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE(8, 0x76), /* Vendor Usage 0x76 */
+ 180:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+ 181:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(16, 0x00FF),
+ 182:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, CONSOLE_EPSIZE),
+ 183:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x08),
+ 184:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE)
+ 185:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+ 186:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 187:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 188:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 189:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef NKRO_ENABLE
+ 190:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_HIDReport_Datatype_t PROGMEM NKROReport[] =
+ 191:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 192:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE_PAGE(8, 0x01), /* Generic Desktop */
+ 193:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_USAGE(8, 0x06), /* Keyboard */
+ 194:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_COLLECTION(8, 0x01), /* Application */
+ 195:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x07), /* Key Codes */
+ 196:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0xE0), /* Keyboard Left Control */
+ 197:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, 0xE7), /* Keyboard Right GUI */
+ 198:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+ 199:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+ 200:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x08),
+ 201:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x01),
+ 202:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+ 203:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 204:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x08), /* LEDs */
+ 205:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0x01), /* Num Lock */
+ 206:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, 0x05), /* Kana */
+ 207:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x05),
+ 208:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x01),
+ 209:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE)
+ 210:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, 0x01),
+ 211:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x03),
+ 212:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_OUTPUT(8, HID_IOF_CONSTANT),
+ 213:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 214:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_PAGE(8, 0x07), /* Key Codes */
+ 215:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MINIMUM(8, 0x00), /* Keyboard 0 */
+ 216:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_USAGE_MAXIMUM(8, (NKRO_EPSIZE-1)*8-1), /* Keyboard Right GUI */
+ 217:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MINIMUM(8, 0x00),
+ 218:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_LOGICAL_MAXIMUM(8, 0x01),
+ 219:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_COUNT(8, (NKRO_EPSIZE-1)*8),
+ 220:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_REPORT_SIZE(8, 0x01),
+ 221:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
+ 222:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     HID_RI_END_COLLECTION(0),
+ 223:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 224:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 225:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 226:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*******************************************************************************
+ 227:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * Device Descriptors
+ 228:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  ******************************************************************************/
+ 229:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
+ 230:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 231:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+ 232:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 233:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .USBSpecification       = VERSION_BCD(1,1,0),
+ 234:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Class                  = USB_CSCP_NoDeviceClass,
+ 235:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .SubClass               = USB_CSCP_NoDeviceSubclass,
+ 236:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Protocol               = USB_CSCP_NoDeviceProtocol,
+ 237:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 238:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+ 239:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 240:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /* specified in config.h */
+ 241:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .VendorID               = VENDOR_ID,
+ 242:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .ProductID              = PRODUCT_ID,
+ 243:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .ReleaseNumber          = DEVICE_VER,
+ 244:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 245:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .ManufacturerStrIndex   = 0x01,
+ 246:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .ProductStrIndex        = 0x02,
+ 247:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .SerialNumStrIndex      = NO_DESCRIPTOR,
+ 248:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 249:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+ 250:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 251:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 252:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*******************************************************************************
+ 253:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * Configuration Descriptors
+ 254:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  ******************************************************************************/
+ 255:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
+ 256:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 257:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Config =
+ 258:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 259:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Configuration_Header_t), .Type
+ 260:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 261:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalConfigurationSize = sizeof(USB_Descriptor_Configuration_t),
+ 262:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalInterfaces        = TOTAL_INTERFACES,
+ 263:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 264:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .ConfigurationNumber    = 1,
+ 265:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .ConfigurationStrIndex  = NO_DESCRIPTOR,
+ 266:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 267:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .ConfigAttributes       = (USB_CONFIG_ATTR_RESERVED | USB_CONFIG_ATTR_REMOTEWAKEUP),
+ 268:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 269:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
+ 270:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 271:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 272:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /*
+ 273:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      * Keyboard
+ 274:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      */
+ 275:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Keyboard_Interface =
+ 276:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 277:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_In
+ 278:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 279:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceNumber        = KEYBOARD_INTERFACE,
+ 280:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .AlternateSetting       = 0x00,
+ 281:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 282:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalEndpoints         = 1,
+ 283:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 284:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Class                  = HID_CSCP_HIDClass,
+ 285:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .SubClass               = HID_CSCP_BootSubclass,
+ 286:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Protocol               = HID_CSCP_KeyboardBootProtocol,
+ 287:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 288:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceStrIndex      = NO_DESCRIPTOR
+ 289:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 290:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 291:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Keyboard_HID =
+ 292:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 293:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_
+ 294:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 295:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDSpec                = VERSION_BCD(1,1,1),
+ 296:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .CountryCode            = 0x00,
+ 297:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalReportDescriptors = 1,
+ 298:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportType          = HID_DTYPE_Report,
+ 299:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportLength        = sizeof(KeyboardReport)
+ 300:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 301:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 302:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Keyboard_INEndpoint =
+ 303:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 304:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 305:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 306:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_IN | KEYBOARD_IN_EPNUM),
+ 307:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 308:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = KEYBOARD_EPSIZE,
+ 309:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x0A
+ 310:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 311:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 312:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /*
+ 313:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      * Mouse
+ 314:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      */
+ 315:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef MOUSE_ENABLE
+ 316:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Mouse_Interface =
+ 317:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 318:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_In
+ 319:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 320:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceNumber        = MOUSE_INTERFACE,
+ 321:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .AlternateSetting       = 0x00,
+ 322:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 323:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalEndpoints         = 1,
+ 324:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 325:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Class                  = HID_CSCP_HIDClass,
+ 326:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .SubClass               = HID_CSCP_BootSubclass,
+ 327:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Protocol               = HID_CSCP_MouseBootProtocol,
+ 328:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 329:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceStrIndex      = NO_DESCRIPTOR
+ 330:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 331:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 332:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Mouse_HID =
+ 333:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 334:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_
+ 335:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 336:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDSpec                = VERSION_BCD(1,1,1),
+ 337:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .CountryCode            = 0x00,
+ 338:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalReportDescriptors = 1,
+ 339:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportType          = HID_DTYPE_Report,
+ 340:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportLength        = sizeof(MouseReport)
+ 341:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 342:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 343:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Mouse_INEndpoint =
+ 344:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 345:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 346:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 347:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_IN | MOUSE_IN_EPNUM),
+ 348:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 349:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = MOUSE_EPSIZE,
+ 350:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x0A
+ 351:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 352:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 353:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 354:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /*
+ 355:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      * Extra
+ 356:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      */
+ 357:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef EXTRAKEY_ENABLE
+ 358:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Extrakey_Interface =
+ 359:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 360:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_In
+ 361:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 362:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceNumber        = EXTRAKEY_INTERFACE,
+ 363:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .AlternateSetting       = 0x00,
+ 364:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 365:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalEndpoints         = 1,
+ 366:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 367:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Class                  = HID_CSCP_HIDClass,
+ 368:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .SubClass               = HID_CSCP_NonBootSubclass,
+ 369:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Protocol               = HID_CSCP_NonBootProtocol,
+ 370:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 371:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceStrIndex      = NO_DESCRIPTOR
+ 372:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 373:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 374:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Extrakey_HID =
+ 375:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 376:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_
+ 377:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 378:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDSpec                = VERSION_BCD(1,1,1),
+ 379:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .CountryCode            = 0x00,
+ 380:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalReportDescriptors = 1,
+ 381:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportType          = HID_DTYPE_Report,
+ 382:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportLength        = sizeof(ExtrakeyReport)
+ 383:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 384:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 385:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Extrakey_INEndpoint =
+ 386:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 387:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 388:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 389:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_IN | EXTRAKEY_IN_EPNUM),
+ 390:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 391:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = EXTRAKEY_EPSIZE,
+ 392:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x0A
+ 393:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 394:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 395:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 396:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /*
+ 397:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      * Console
+ 398:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      */
+ 399:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef CONSOLE_ENABLE
+ 400:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Console_Interface =
+ 401:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 402:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_In
+ 403:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 404:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceNumber        = CONSOLE_INTERFACE,
+ 405:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .AlternateSetting       = 0x00,
+ 406:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 407:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalEndpoints         = 2,
+ 408:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 409:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Class                  = HID_CSCP_HIDClass,
+ 410:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .SubClass               = HID_CSCP_NonBootSubclass,
+ 411:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Protocol               = HID_CSCP_NonBootProtocol,
+ 412:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 413:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceStrIndex      = NO_DESCRIPTOR
+ 414:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 415:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 416:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Console_HID =
+ 417:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 418:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_
+ 419:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 420:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDSpec                = VERSION_BCD(1,1,1),
+ 421:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .CountryCode            = 0x00,
+ 422:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalReportDescriptors = 1,
+ 423:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportType          = HID_DTYPE_Report,
+ 424:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportLength        = sizeof(ConsoleReport)
+ 425:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 426:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 427:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Console_INEndpoint =
+ 428:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 429:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 430:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 431:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_IN | CONSOLE_IN_EPNUM),
+ 432:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 433:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = CONSOLE_EPSIZE,
+ 434:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x01
+ 435:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 436:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 437:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Console_OUTEndpoint =
+ 438:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 439:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 440:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 441:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_OUT | CONSOLE_OUT_EPNUM),
+ 442:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 443:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = CONSOLE_EPSIZE,
+ 444:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x01
+ 445:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 446:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 447:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 448:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /*
+ 449:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      * NKRO
+ 450:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****      */
+ 451:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef NKRO_ENABLE
+ 452:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .NKRO_Interface =
+ 453:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 454:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_In
+ 455:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 456:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceNumber        = NKRO_INTERFACE,
+ 457:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .AlternateSetting       = 0x00,
+ 458:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 459:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalEndpoints         = 1,
+ 460:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 461:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Class                  = HID_CSCP_HIDClass,
+ 462:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .SubClass               = HID_CSCP_NonBootSubclass,
+ 463:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Protocol               = HID_CSCP_NonBootProtocol,
+ 464:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 465:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .InterfaceStrIndex      = NO_DESCRIPTOR
+ 466:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 467:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 468:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .NKRO_HID =
+ 469:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 470:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_
+ 471:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 472:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDSpec                = VERSION_BCD(1,1,1),
+ 473:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .CountryCode            = 0x00,
+ 474:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .TotalReportDescriptors = 1,
+ 475:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportType          = HID_DTYPE_Report,
+ 476:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .HIDReportLength        = sizeof(NKROReport)
+ 477:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 478:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 479:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .NKRO_INEndpoint =
+ 480:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         {
+ 481:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Header                 = {.Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_End
+ 482:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 483:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointAddress        = (ENDPOINT_DIR_IN | NKRO_IN_EPNUM),
+ 484:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_D
+ 485:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .EndpointSize           = NKRO_EPSIZE,
+ 486:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             .PollingIntervalMS      = 0x01
+ 487:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         },
+ 488:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 489:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 490:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 491:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 492:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /*******************************************************************************
+ 493:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  * String Descriptors
+ 494:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  ******************************************************************************/
+ 495:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_String_t PROGMEM LanguageString =
+ 496:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 497:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Header                 = {.Size = USB_STRING_LEN(1), .Type = DTYPE_String},
+ 498:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 499:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .UnicodeString          = {LANGUAGE_ID_ENG}
+ 500:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 501:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 502:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_String_t PROGMEM ManufacturerString =
+ 503:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 504:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /* subtract 1 for null terminator */
+ 505:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Header                 = {.Size = USB_STRING_LEN(sizeof(STR(MANUFACTURER))-1), .Type = DTYPE_S
+ 506:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 507:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .UnicodeString          = LSTR(MANUFACTURER)
+ 508:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 509:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 510:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** const USB_Descriptor_String_t PROGMEM ProductString =
+ 511:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+ 512:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     /* subtract 1 for null terminator */
+ 513:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .Header                 = {.Size = USB_STRING_LEN(sizeof(STR(PRODUCT))-1), .Type = DTYPE_String
+ 514:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 515:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     .UnicodeString          = LSTR(PRODUCT)
+ 516:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** };
+ 517:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 518:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 519:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** /** This function is called by the library when in device mode, and must be overridden (see library
+ 520:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *  documentation) by the application code so that the address and size of a requested descriptor c
+ 521:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *  to the USB library. When the device receives a Get Descriptor request on the control endpoint, 
+ 522:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *  is called so that the descriptor details can be passed back and the appropriate descriptor sent
+ 523:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  *  USB host.
+ 524:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****  */
+ 525:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
+ 526:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                                     const uint8_t wIndex,
+ 527:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                                     const void** const DescriptorAddress)
+ 528:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** {
+  16               		.loc 1 528 0
+  17               		.cfi_startproc
+  18               	.LVL0:
+  19               	/* prologue: function */
+  20               	/* frame size = 0 */
+  21               	/* stack size = 0 */
+  22               	.L__stack_usage = 0
+ 529:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     const uint8_t  DescriptorType   = (wValue >> 8);
+  23               		.loc 1 529 0
+  24 0000 E92F      		mov r30,r25
+  25 0002 FF27      		clr r31
+  26               	.LVL1:
+ 530:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     const uint8_t  DescriptorIndex  = (wValue & 0xFF);
+ 531:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 532:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     const void* Address = NULL;
+ 533:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     uint16_t    Size    = NO_DESCRIPTOR;
+ 534:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 535:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     switch (DescriptorType)
+  27               		.loc 1 535 0
+  28 0004 E330      		cpi r30,3
+  29 0006 F105      		cpc r31,__zero_reg__
+  30 0008 01F0      		breq .L3
+  31 000a 00F4      		brsh .L4
+  32 000c E130      		cpi r30,1
+  33 000e F105      		cpc r31,__zero_reg__
+  34 0010 01F0      		breq .L5
+  35 0012 3297      		sbiw r30,2
+  36 0014 01F0      		breq .L6
+  37               	.LVL2:
+  38               	.L22:
+ 533:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+  39               		.loc 1 533 0
+  40 0016 F0E0      		ldi r31,0
+  41 0018 E0E0      		ldi r30,0
+ 532:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     uint16_t    Size    = NO_DESCRIPTOR;
+  42               		.loc 1 532 0
+  43 001a 90E0      		ldi r25,0
+  44 001c 80E0      		ldi r24,0
+  45 001e 00C0      		rjmp .L2
+  46               	.LVL3:
+  47               	.L4:
+  48               		.loc 1 535 0
+  49 0020 E132      		cpi r30,33
+  50 0022 F105      		cpc r31,__zero_reg__
+  51 0024 01F0      		breq .L7
+  52 0026 E232      		cpi r30,34
+  53 0028 F105      		cpc r31,__zero_reg__
+  54 002a 01F4      		brne .L22
+ 536:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     {
+ 537:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case DTYPE_Device:
+ 538:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Address = &DeviceDescriptor;
+ 539:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Size    = sizeof(USB_Descriptor_Device_t);
+ 540:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+ 541:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case DTYPE_Configuration:
+ 542:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Address = &ConfigurationDescriptor;
+ 543:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Size    = sizeof(USB_Descriptor_Configuration_t);
+ 544:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+ 545:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case DTYPE_String:
+ 546:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             switch (DescriptorIndex )
+ 547:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             {
+ 548:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 case 0x00:
+ 549:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Address = &LanguageString;
+ 550:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&LanguageString.Header.Size);
+ 551:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 552:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 case 0x01:
+ 553:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Address = &ManufacturerString;
+ 554:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&ManufacturerString.Header.Size);
+ 555:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 556:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 case 0x02:
+ 557:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Address = &ProductString;
+ 558:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&ProductString.Header.Size);
+ 559:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 560:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             }
+ 561:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+ 562:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case HID_DTYPE_HID:
+ 563:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             switch (wIndex) {
+ 564:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case KEYBOARD_INTERFACE:
+ 565:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConfigurationDescriptor.Keyboard_HID;
+ 566:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 567:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 568:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef MOUSE_ENABLE
+ 569:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case MOUSE_INTERFACE:
+ 570:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConfigurationDescriptor.Mouse_HID;
+ 571:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 572:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 573:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 574:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef EXTRAKEY_ENABLE
+ 575:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case EXTRAKEY_INTERFACE:
+ 576:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConfigurationDescriptor.Extrakey_HID;
+ 577:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 578:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 579:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 580:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef CONSOLE_ENABLE
+ 581:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case CONSOLE_INTERFACE:
+ 582:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConfigurationDescriptor.Console_HID;
+ 583:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 584:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 585:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 586:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef NKRO_ENABLE
+ 587:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case NKRO_INTERFACE:
+ 588:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConfigurationDescriptor.NKRO_HID;
+ 589:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 590:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 591:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 592:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             }
+ 593:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+ 594:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case HID_DTYPE_Report:
+ 595:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             switch (wIndex) {
+  55               		.loc 1 595 0
+  56 002c 6623      		tst r22
+  57 002e 01F4      		brne .+2
+  58 0030 00C0      		rjmp .L14
+ 596:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case KEYBOARD_INTERFACE:
+ 597:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &KeyboardReport;
+ 598:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(KeyboardReport);
+ 599:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 600:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef MOUSE_ENABLE
+ 601:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case MOUSE_INTERFACE:
+ 602:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &MouseReport;
+ 603:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(MouseReport);
+ 604:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 605:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 606:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef EXTRAKEY_ENABLE
+ 607:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case EXTRAKEY_INTERFACE:
+ 608:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ExtrakeyReport;
+ 609:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(ExtrakeyReport);
+ 610:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 611:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 612:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef CONSOLE_ENABLE
+ 613:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case CONSOLE_INTERFACE:
+ 614:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &ConsoleReport;
+  59               		.loc 1 614 0
+  60 0032 80E0      		ldi r24,lo8(ConsoleReport)
+  61 0034 90E0      		ldi r25,hi8(ConsoleReport)
+  62               	.LVL4:
+ 595:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case KEYBOARD_INTERFACE:
+  63               		.loc 1 595 0
+  64 0036 6130      		cpi r22,lo8(1)
+  65 0038 01F0      		breq .L2
+  66 003a 00C0      		rjmp .L22
+  67               	.LVL5:
+  68               	.L5:
+ 539:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+  69               		.loc 1 539 0
+  70 003c E2E1      		ldi r30,lo8(18)
+  71 003e F0E0      		ldi r31,0
+  72               	.LVL6:
+ 538:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Size    = sizeof(USB_Descriptor_Device_t);
+  73               		.loc 1 538 0
+  74 0040 80E0      		ldi r24,lo8(DeviceDescriptor)
+  75 0042 90E0      		ldi r25,hi8(DeviceDescriptor)
+  76               	.LVL7:
+  77               	.L2:
+ 615:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(ConsoleReport);
+ 616:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 617:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 618:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #ifdef NKRO_ENABLE
+ 619:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case NKRO_INTERFACE:
+ 620:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Address = &NKROReport;
+ 621:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(NKROReport);
+ 622:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 623:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** #endif
+ 624:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             }
+ 625:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+ 626:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     }
+ 627:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** 
+ 628:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     *DescriptorAddress = Address;
+  78               		.loc 1 628 0
+  79 0044 DA01      		movw r26,r20
+  80 0046 8D93      		st X+,r24
+  81 0048 9C93      		st X,r25
+ 629:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****     return Size;
+ 630:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c **** }
+  82               		.loc 1 630 0
+  83 004a CF01      		movw r24,r30
+  84               	.LVL8:
+  85               	/* epilogue start */
+  86 004c 0895      		ret
+  87               	.LVL9:
+  88               	.L6:
+ 543:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             break;
+  89               		.loc 1 543 0
+  90 004e E2E4      		ldi r30,lo8(66)
+  91 0050 F0E0      		ldi r31,0
+  92               	.LVL10:
+ 542:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             Size    = sizeof(USB_Descriptor_Configuration_t);
+  93               		.loc 1 542 0
+  94 0052 80E0      		ldi r24,lo8(ConfigurationDescriptor)
+  95 0054 90E0      		ldi r25,hi8(ConfigurationDescriptor)
+  96               	.LVL11:
+ 544:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****         case DTYPE_String:
+  97               		.loc 1 544 0
+  98 0056 00C0      		rjmp .L2
+  99               	.LVL12:
+ 100               	.L3:
+ 546:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             {
+ 101               		.loc 1 546 0
+ 102 0058 9927      		clr r25
+ 103               	.LVL13:
+ 104 005a 8130      		cpi r24,1
+ 105 005c 9105      		cpc r25,__zero_reg__
+ 106 005e 01F0      		breq .L9
+ 107 0060 00F0      		brlo .L10
+ 108 0062 0297      		sbiw r24,2
+ 109 0064 01F4      		brne .L22
+ 110               	.LVL14:
+ 111               	.LBB2:
+ 558:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 112               		.loc 1 558 0
+ 113 0066 E0E0      		ldi r30,lo8(ProductString)
+ 114 0068 F0E0      		ldi r31,hi8(ProductString)
+ 115               	.LVL15:
+ 116               	/* #APP */
+ 117               	 ;  558 "/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c" 1
+ 118 006a E491      		lpm r30, Z
+ 119               		
+ 120               	 ;  0 "" 2
+ 121               	.LVL16:
+ 122               	/* #NOAPP */
+ 123               	.LBE2:
+ 124 006c F0E0      		ldi r31,0
+ 125               	.LVL17:
+ 557:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&ProductString.Header.Size);
+ 126               		.loc 1 557 0
+ 127 006e 80E0      		ldi r24,lo8(ProductString)
+ 128 0070 90E0      		ldi r25,hi8(ProductString)
+ 559:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             }
+ 129               		.loc 1 559 0
+ 130 0072 00C0      		rjmp .L2
+ 131               	.LVL18:
+ 132               	.L10:
+ 133               	.LBB3:
+ 550:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 134               		.loc 1 550 0
+ 135 0074 E0E0      		ldi r30,lo8(LanguageString)
+ 136 0076 F0E0      		ldi r31,hi8(LanguageString)
+ 137               	.LVL19:
+ 138               	/* #APP */
+ 139               	 ;  550 "/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c" 1
+ 140 0078 E491      		lpm r30, Z
+ 141               		
+ 142               	 ;  0 "" 2
+ 143               	.LVL20:
+ 144               	/* #NOAPP */
+ 145               	.LBE3:
+ 146 007a F0E0      		ldi r31,0
+ 147               	.LVL21:
+ 549:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&LanguageString.Header.Size);
+ 148               		.loc 1 549 0
+ 149 007c 80E0      		ldi r24,lo8(LanguageString)
+ 150 007e 90E0      		ldi r25,hi8(LanguageString)
+ 551:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 case 0x01:
+ 151               		.loc 1 551 0
+ 152 0080 00C0      		rjmp .L2
+ 153               	.LVL22:
+ 154               	.L9:
+ 155               	.LBB4:
+ 554:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     break;
+ 156               		.loc 1 554 0
+ 157 0082 E0E0      		ldi r30,lo8(ManufacturerString)
+ 158 0084 F0E0      		ldi r31,hi8(ManufacturerString)
+ 159               	.LVL23:
+ 160               	/* #APP */
+ 161               	 ;  554 "/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c" 1
+ 162 0086 E491      		lpm r30, Z
+ 163               		
+ 164               	 ;  0 "" 2
+ 165               	.LVL24:
+ 166               	/* #NOAPP */
+ 167               	.LBE4:
+ 168 0088 F0E0      		ldi r31,0
+ 169               	.LVL25:
+ 553:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                     Size    = pgm_read_byte(&ManufacturerString.Header.Size);
+ 170               		.loc 1 553 0
+ 171 008a 80E0      		ldi r24,lo8(ManufacturerString)
+ 172 008c 90E0      		ldi r25,hi8(ManufacturerString)
+ 555:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 case 0x02:
+ 173               		.loc 1 555 0
+ 174 008e 00C0      		rjmp .L2
+ 175               	.LVL26:
+ 176               	.L7:
+ 566:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 177               		.loc 1 566 0
+ 178 0090 E9E0      		ldi r30,lo8(9)
+ 179 0092 F0E0      		ldi r31,0
+ 180               	.LVL27:
+ 565:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 181               		.loc 1 565 0
+ 182 0094 80E0      		ldi r24,lo8(ConfigurationDescriptor+18)
+ 183 0096 90E0      		ldi r25,hi8(ConfigurationDescriptor+18)
+ 184               	.LVL28:
+ 563:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case KEYBOARD_INTERFACE:
+ 185               		.loc 1 563 0
+ 186 0098 6623      		tst r22
+ 187 009a 01F0      		breq .L2
+ 583:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 188               		.loc 1 583 0
+ 189 009c E9E0      		ldi r30,lo8(9)
+ 190 009e F0E0      		ldi r31,0
+ 582:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(USB_HID_Descriptor_HID_t);
+ 191               		.loc 1 582 0
+ 192 00a0 80E0      		ldi r24,lo8(ConfigurationDescriptor+43)
+ 193 00a2 90E0      		ldi r25,hi8(ConfigurationDescriptor+43)
+ 563:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****             case KEYBOARD_INTERFACE:
+ 194               		.loc 1 563 0
+ 195 00a4 6130      		cpi r22,lo8(1)
+ 196 00a6 01F0      		breq .L2
+ 197 00a8 00C0      		rjmp .L22
+ 198               	.LVL29:
+ 199               	.L14:
+ 598:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 break;
+ 200               		.loc 1 598 0
+ 201 00aa E0E4      		ldi r30,lo8(64)
+ 202 00ac F0E0      		ldi r31,0
+ 203               	.LVL30:
+ 597:/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.c ****                 Size    = sizeof(KeyboardReport);
+ 204               		.loc 1 597 0
+ 205 00ae 80E0      		ldi r24,lo8(KeyboardReport)
+ 206 00b0 90E0      		ldi r25,hi8(KeyboardReport)
+ 207               	.LVL31:
+ 208 00b2 00C0      		rjmp .L2
+ 209               		.cfi_endproc
+ 210               	.LFE100:
+ 212               	.global	ProductString
+ 213               		.section	.progmem.data.ProductString,"a",@progbits
+ 216               	ProductString:
+ 217 0000 5E        		.byte	94
+ 218 0001 03        		.byte	3
+ 219 0002 5000      		.string	"P"
+ 220 0004 5300      		.string	"S"
+ 221 0006 2F00      		.string	"/"
+ 222 0008 3200      		.string	"2"
+ 223 000a 2800      		.string	"("
+ 224 000c 5300      		.string	"S"
+ 225 000e 6500      		.string	"e"
+ 226 0010 7400      		.string	"t"
+ 227 0012 3300      		.string	"3"
+ 228 0014 2900      		.string	")"
+ 229 0016 2D00      		.string	"-"
+ 230 0018 5500      		.string	"U"
+ 231 001a 5300      		.string	"S"
+ 232 001c 4200      		.string	"B"
+ 233 001e 2000      		.string	" "
+ 234 0020 4B00      		.string	"K"
+ 235 0022 6500      		.string	"e"
+ 236 0024 7900      		.string	"y"
+ 237 0026 6200      		.string	"b"
+ 238 0028 6F00      		.string	"o"
+ 239 002a 6100      		.string	"a"
+ 240 002c 7200      		.string	"r"
+ 241 002e 6400      		.string	"d"
+ 242 0030 2000      		.string	" "
+ 243 0032 6300      		.string	"c"
+ 244 0034 6F00      		.string	"o"
+ 245 0036 6E00      		.string	"n"
+ 246 0038 7600      		.string	"v"
+ 247 003a 6500      		.string	"e"
+ 248 003c 7200      		.string	"r"
+ 249 003e 7400      		.string	"t"
+ 250 0040 6500      		.string	"e"
+ 251 0042 7200      		.string	"r"
+ 252 0044 2800      		.string	"("
+ 253 0046 4900      		.string	"I"
+ 254 0048 4200      		.string	"B"
+ 255 004a 4D00      		.string	"M"
+ 256 004c 2000      		.string	" "
+ 257 004e 3100      		.string	"1"
+ 258 0050 3200      		.string	"2"
+ 259 0052 3200      		.string	"2"
+ 260 0054 6B00      		.string	"k"
+ 261 0056 6500      		.string	"e"
+ 262 0058 7900      		.string	"y"
+ 263 005a 7300      		.string	"s"
+ 264 005c 2900      		.string	")"
+ 265 005e 00        		.string	""
+ 266 005f 00        		.string	""
+ 267               	.global	ManufacturerString
+ 268               		.section	.progmem.data.ManufacturerString,"a",@progbits
+ 271               	ManufacturerString:
+ 272 0000 0E        		.byte	14
+ 273 0001 03        		.byte	3
+ 274 0002 7400      		.string	"t"
+ 275 0004 2E00      		.string	"."
+ 276 0006 6D00      		.string	"m"
+ 277 0008 2E00      		.string	"."
+ 278 000a 6B00      		.string	"k"
+ 279 000c 2E00      		.string	"."
+ 280 000e 00        		.string	""
+ 281 000f 00        		.string	""
+ 282               	.global	LanguageString
+ 283               		.section	.progmem.data.LanguageString,"a",@progbits
+ 286               	LanguageString:
+ 287 0000 04        		.byte	4
+ 288 0001 03        		.byte	3
+ 289 0002 0904      		.word	1033
+ 290               	.global	ConfigurationDescriptor
+ 291               		.section	.progmem.data.ConfigurationDescriptor,"a",@progbits
+ 294               	ConfigurationDescriptor:
+ 295 0000 09        		.byte	9
+ 296 0001 02        		.byte	2
+ 297 0002 4200      		.word	66
+ 298 0004 02        		.byte	2
+ 299 0005 01        		.byte	1
+ 300 0006 00        		.byte	0
+ 301 0007 A0        		.byte	-96
+ 302 0008 32        		.byte	50
+ 303 0009 09        		.byte	9
+ 304 000a 04        		.byte	4
+ 305 000b 00        		.byte	0
+ 306 000c 00        		.byte	0
+ 307 000d 01        		.byte	1
+ 308 000e 03        		.byte	3
+ 309 000f 01        		.byte	1
+ 310 0010 01        		.byte	1
+ 311 0011 00        		.byte	0
+ 312 0012 09        		.byte	9
+ 313 0013 21        		.byte	33
+ 314 0014 1101      		.word	273
+ 315 0016 00        		.byte	0
+ 316 0017 01        		.byte	1
+ 317 0018 22        		.byte	34
+ 318 0019 4000      		.word	64
+ 319 001b 07        		.byte	7
+ 320 001c 05        		.byte	5
+ 321 001d 81        		.byte	-127
+ 322 001e 03        		.byte	3
+ 323 001f 0800      		.word	8
+ 324 0021 0A        		.byte	10
+ 325 0022 09        		.byte	9
+ 326 0023 04        		.byte	4
+ 327 0024 01        		.byte	1
+ 328 0025 00        		.byte	0
+ 329 0026 02        		.byte	2
+ 330 0027 03        		.byte	3
+ 331 0028 00        		.byte	0
+ 332 0029 00        		.byte	0
+ 333 002a 00        		.byte	0
+ 334 002b 09        		.byte	9
+ 335 002c 21        		.byte	33
+ 336 002d 1101      		.word	273
+ 337 002f 00        		.byte	0
+ 338 0030 01        		.byte	1
+ 339 0031 22        		.byte	34
+ 340 0032 2200      		.word	34
+ 341 0034 07        		.byte	7
+ 342 0035 05        		.byte	5
+ 343 0036 82        		.byte	-126
+ 344 0037 03        		.byte	3
+ 345 0038 2000      		.word	32
+ 346 003a 01        		.byte	1
+ 347 003b 07        		.byte	7
+ 348 003c 05        		.byte	5
+ 349 003d 02        		.byte	2
+ 350 003e 03        		.byte	3
+ 351 003f 2000      		.word	32
+ 352 0041 01        		.byte	1
+ 353               	.global	DeviceDescriptor
+ 354               		.section	.progmem.data.DeviceDescriptor,"a",@progbits
+ 357               	DeviceDescriptor:
+ 358 0000 12        		.byte	18
+ 359 0001 01        		.byte	1
+ 360 0002 1001      		.word	272
+ 361 0004 00        		.byte	0
+ 362 0005 00        		.byte	0
+ 363 0006 00        		.byte	0
+ 364 0007 08        		.byte	8
+ 365 0008 EDFE      		.word	-275
+ 366 000a 3565      		.word	25909
+ 367 000c 0001      		.word	256
+ 368 000e 01        		.byte	1
+ 369 000f 02        		.byte	2
+ 370 0010 00        		.byte	0
+ 371 0011 01        		.byte	1
+ 372               	.global	ConsoleReport
+ 373               		.section	.progmem.data.ConsoleReport,"a",@progbits
+ 376               	ConsoleReport:
+ 377 0000 06        		.byte	6
+ 378 0001 31        		.byte	49
+ 379 0002 FF        		.byte	-1
+ 380 0003 09        		.byte	9
+ 381 0004 74        		.byte	116
+ 382 0005 A1        		.byte	-95
+ 383 0006 01        		.byte	1
+ 384 0007 09        		.byte	9
+ 385 0008 75        		.byte	117
+ 386 0009 15        		.byte	21
+ 387 000a 00        		.byte	0
+ 388 000b 26        		.byte	38
+ 389 000c FF        		.byte	-1
+ 390 000d 00        		.byte	0
+ 391 000e 95        		.byte	-107
+ 392 000f 20        		.byte	32
+ 393 0010 75        		.byte	117
+ 394 0011 08        		.byte	8
+ 395 0012 81        		.byte	-127
+ 396 0013 02        		.byte	2
+ 397 0014 09        		.byte	9
+ 398 0015 76        		.byte	118
+ 399 0016 15        		.byte	21
+ 400 0017 00        		.byte	0
+ 401 0018 26        		.byte	38
+ 402 0019 FF        		.byte	-1
+ 403 001a 00        		.byte	0
+ 404 001b 95        		.byte	-107
+ 405 001c 20        		.byte	32
+ 406 001d 75        		.byte	117
+ 407 001e 08        		.byte	8
+ 408 001f 91        		.byte	-111
+ 409 0020 02        		.byte	2
+ 410 0021 C0        		.byte	-64
+ 411               	.global	KeyboardReport
+ 412               		.section	.progmem.data.KeyboardReport,"a",@progbits
+ 415               	KeyboardReport:
+ 416 0000 05        		.byte	5
+ 417 0001 01        		.byte	1
+ 418 0002 09        		.byte	9
+ 419 0003 06        		.byte	6
+ 420 0004 A1        		.byte	-95
+ 421 0005 01        		.byte	1
+ 422 0006 05        		.byte	5
+ 423 0007 07        		.byte	7
+ 424 0008 19        		.byte	25
+ 425 0009 E0        		.byte	-32
+ 426 000a 29        		.byte	41
+ 427 000b E7        		.byte	-25
+ 428 000c 15        		.byte	21
+ 429 000d 00        		.byte	0
+ 430 000e 25        		.byte	37
+ 431 000f 01        		.byte	1
+ 432 0010 95        		.byte	-107
+ 433 0011 08        		.byte	8
+ 434 0012 75        		.byte	117
+ 435 0013 01        		.byte	1
+ 436 0014 81        		.byte	-127
+ 437 0015 02        		.byte	2
+ 438 0016 95        		.byte	-107
+ 439 0017 01        		.byte	1
+ 440 0018 75        		.byte	117
+ 441 0019 08        		.byte	8
+ 442 001a 81        		.byte	-127
+ 443 001b 01        		.byte	1
+ 444 001c 05        		.byte	5
+ 445 001d 08        		.byte	8
+ 446 001e 19        		.byte	25
+ 447 001f 01        		.byte	1
+ 448 0020 29        		.byte	41
+ 449 0021 05        		.byte	5
+ 450 0022 95        		.byte	-107
+ 451 0023 05        		.byte	5
+ 452 0024 75        		.byte	117
+ 453 0025 01        		.byte	1
+ 454 0026 91        		.byte	-111
+ 455 0027 02        		.byte	2
+ 456 0028 95        		.byte	-107
+ 457 0029 01        		.byte	1
+ 458 002a 75        		.byte	117
+ 459 002b 03        		.byte	3
+ 460 002c 91        		.byte	-111
+ 461 002d 01        		.byte	1
+ 462 002e 05        		.byte	5
+ 463 002f 07        		.byte	7
+ 464 0030 19        		.byte	25
+ 465 0031 00        		.byte	0
+ 466 0032 29        		.byte	41
+ 467 0033 FF        		.byte	-1
+ 468 0034 15        		.byte	21
+ 469 0035 00        		.byte	0
+ 470 0036 26        		.byte	38
+ 471 0037 FF        		.byte	-1
+ 472 0038 00        		.byte	0
+ 473 0039 95        		.byte	-107
+ 474 003a 06        		.byte	6
+ 475 003b 75        		.byte	117
+ 476 003c 08        		.byte	8
+ 477 003d 81        		.byte	-127
+ 478 003e 00        		.byte	0
+ 479 003f C0        		.byte	-64
+ 480               		.text
+ 481               	.Letext0:
+ 482               		.file 2 "/opt/local/avr/include/stdint.h"
+ 483               		.file 3 "/opt/local/lib/gcc/avr/7.2.0/include/stddef.h"
+ 484               		.file 4 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../Std
+ 485               		.file 5 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../Std
+ 486               		.file 6 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../Dev
+ 487               		.file 7 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/USBTask.h"
+ 488               		.file 8 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/HostStandar
+ 489               		.file 9 "/opt/local/avr/include/stdio.h"
+ 490               		.file 10 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Class/Device/..
+ 491               		.file 11 "/users/hunter/downloads/tmk_core/protocol/lufa/descriptor.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 descriptor.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:13     .text.CALLBACK_USB_GetDescriptor:0000000000000000 CALLBACK_USB_GetDescriptor
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:376    .progmem.data.ConsoleReport:0000000000000000 ConsoleReport
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:357    .progmem.data.DeviceDescriptor:0000000000000000 DeviceDescriptor
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:294    .progmem.data.ConfigurationDescriptor:0000000000000000 ConfigurationDescriptor
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:216    .progmem.data.ProductString:0000000000000000 ProductString
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:286    .progmem.data.LanguageString:0000000000000000 LanguageString
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:271    .progmem.data.ManufacturerString:0000000000000000 ManufacturerString
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc6jI9dK.s:415    .progmem.data.KeyboardReport:0000000000000000 KeyboardReport
+
+NO UNDEFINED SYMBOLS

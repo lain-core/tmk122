@@ -1,0 +1,488 @@
+   1               		.file	"timer.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.timer_init,"ax",@progbits
+  11               	.global	timer_init
+  13               	timer_init:
+  14               	.LFB0:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/common/avr/timer.c"
+   1:/users/hunter/downloads/tmk_core/common/avr/timer.c **** /*
+   2:/users/hunter/downloads/tmk_core/common/avr/timer.c **** Copyright 2011 Jun Wako <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+   4:/users/hunter/downloads/tmk_core/common/avr/timer.c **** This program is free software: you can redistribute it and/or modify
+   5:/users/hunter/downloads/tmk_core/common/avr/timer.c **** it under the terms of the GNU General Public License as published by
+   6:/users/hunter/downloads/tmk_core/common/avr/timer.c **** the Free Software Foundation, either version 2 of the License, or
+   7:/users/hunter/downloads/tmk_core/common/avr/timer.c **** (at your option) any later version.
+   8:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+   9:/users/hunter/downloads/tmk_core/common/avr/timer.c **** This program is distributed in the hope that it will be useful,
+  10:/users/hunter/downloads/tmk_core/common/avr/timer.c **** but WITHOUT ANY WARRANTY; without even the implied warranty of
+  11:/users/hunter/downloads/tmk_core/common/avr/timer.c **** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  12:/users/hunter/downloads/tmk_core/common/avr/timer.c **** GNU General Public License for more details.
+  13:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  14:/users/hunter/downloads/tmk_core/common/avr/timer.c **** You should have received a copy of the GNU General Public License
+  15:/users/hunter/downloads/tmk_core/common/avr/timer.c **** along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  16:/users/hunter/downloads/tmk_core/common/avr/timer.c **** */
+  17:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  18:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #include <avr/io.h>
+  19:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #include <avr/interrupt.h>
+  20:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #include <stdint.h>
+  21:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #include "timer_avr.h"
+  22:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #include "timer.h"
+  23:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  24:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  25:/users/hunter/downloads/tmk_core/common/avr/timer.c **** // counter resolution 1ms
+  26:/users/hunter/downloads/tmk_core/common/avr/timer.c **** // NOTE: union { uint32_t timer32; struct { uint16_t dummy; uint16_t timer16; }}
+  27:/users/hunter/downloads/tmk_core/common/avr/timer.c **** volatile uint32_t timer_count = 0;
+  28:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  29:/users/hunter/downloads/tmk_core/common/avr/timer.c **** void timer_init(void)
+  30:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+  16               		.loc 1 30 0
+  17               		.cfi_startproc
+  18               	/* prologue: function */
+  19               	/* frame size = 0 */
+  20               	/* stack size = 0 */
+  21               	.L__stack_usage = 0
+  31:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     // Timer0 CTC mode
+  32:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0A = 0x02;
+  22               		.loc 1 32 0
+  23 0000 82E0      		ldi r24,lo8(2)
+  24 0002 84BD      		out 0x24,r24
+  33:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  34:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #if TIMER_PRESCALER == 1
+  35:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0B = 0x01;
+  36:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #elif TIMER_PRESCALER == 8
+  37:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0B = 0x02;
+  38:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #elif TIMER_PRESCALER == 64
+  39:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0B = 0x03;
+  25               		.loc 1 39 0
+  26 0004 93E0      		ldi r25,lo8(3)
+  27 0006 95BD      		out 0x25,r25
+  40:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #elif TIMER_PRESCALER == 256
+  41:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0B = 0x04;
+  42:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #elif TIMER_PRESCALER == 1024
+  43:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TCCR0B = 0x05;
+  44:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #else
+  45:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #   error "Timer prescaler value is NOT vaild."
+  46:/users/hunter/downloads/tmk_core/common/avr/timer.c **** #endif
+  47:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  48:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     OCR0A = TIMER_RAW_TOP;
+  28               		.loc 1 48 0
+  29 0008 9AEF      		ldi r25,lo8(-6)
+  30 000a 97BD      		out 0x27,r25
+  49:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     TIMSK0 = (1<<OCIE0A);
+  31               		.loc 1 49 0
+  32 000c 8093 6E00 		sts 110,r24
+  33               	/* epilogue start */
+  50:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+  34               		.loc 1 50 0
+  35 0010 0895      		ret
+  36               		.cfi_endproc
+  37               	.LFE0:
+  39               		.section	.text.timer_clear,"ax",@progbits
+  40               	.global	timer_clear
+  42               	timer_clear:
+  43               	.LFB1:
+  51:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  52:/users/hunter/downloads/tmk_core/common/avr/timer.c **** inline
+  53:/users/hunter/downloads/tmk_core/common/avr/timer.c **** void timer_clear(void)
+  54:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+  44               		.loc 1 54 0
+  45               		.cfi_startproc
+  46               	/* prologue: function */
+  47               	/* frame size = 0 */
+  48               	/* stack size = 0 */
+  49               	.L__stack_usage = 0
+  55:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint8_t sreg = SREG;
+  50               		.loc 1 55 0
+  51 0000 8FB7      		in r24,__SREG__
+  52               	.LVL0:
+  56:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     cli();
+  53               		.loc 1 56 0
+  54               	/* #APP */
+  55               	 ;  56 "/users/hunter/downloads/tmk_core/common/avr/timer.c" 1
+  56 0002 F894      		cli
+  57               	 ;  0 "" 2
+  57:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     timer_count = 0;
+  58               		.loc 1 57 0
+  59               	/* #NOAPP */
+  60 0004 1092 0000 		sts timer_count,__zero_reg__
+  61 0008 1092 0000 		sts timer_count+1,__zero_reg__
+  62 000c 1092 0000 		sts timer_count+2,__zero_reg__
+  63 0010 1092 0000 		sts timer_count+3,__zero_reg__
+  58:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     SREG = sreg;
+  64               		.loc 1 58 0
+  65 0014 8FBF      		out __SREG__,r24
+  66               	/* epilogue start */
+  59:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+  67               		.loc 1 59 0
+  68 0016 0895      		ret
+  69               		.cfi_endproc
+  70               	.LFE1:
+  72               		.section	.text.timer_read,"ax",@progbits
+  73               	.global	timer_read
+  75               	timer_read:
+  76               	.LFB2:
+  60:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  61:/users/hunter/downloads/tmk_core/common/avr/timer.c **** inline
+  62:/users/hunter/downloads/tmk_core/common/avr/timer.c **** uint16_t timer_read(void)
+  63:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+  77               		.loc 1 63 0
+  78               		.cfi_startproc
+  79               	/* prologue: function */
+  80               	/* frame size = 0 */
+  81               	/* stack size = 0 */
+  82               	.L__stack_usage = 0
+  64:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint32_t t;
+  65:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  66:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint8_t sreg = SREG;
+  83               		.loc 1 66 0
+  84 0000 2FB7      		in r18,__SREG__
+  85               	.LVL1:
+  67:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     cli();
+  86               		.loc 1 67 0
+  87               	/* #APP */
+  88               	 ;  67 "/users/hunter/downloads/tmk_core/common/avr/timer.c" 1
+  89 0002 F894      		cli
+  90               	 ;  0 "" 2
+  68:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     t = timer_count;
+  91               		.loc 1 68 0
+  92               	/* #NOAPP */
+  93 0004 8091 0000 		lds r24,timer_count
+  94 0008 9091 0000 		lds r25,timer_count+1
+  95 000c A091 0000 		lds r26,timer_count+2
+  96 0010 B091 0000 		lds r27,timer_count+3
+  69:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     SREG = sreg;
+  97               		.loc 1 69 0
+  98 0014 2FBF      		out __SREG__,r18
+  99               	/* epilogue start */
+  70:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  71:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     return (t & 0xFFFF);
+  72:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 100               		.loc 1 72 0
+ 101 0016 0895      		ret
+ 102               		.cfi_endproc
+ 103               	.LFE2:
+ 105               		.section	.text.timer_read32,"ax",@progbits
+ 106               	.global	timer_read32
+ 108               	timer_read32:
+ 109               	.LFB3:
+  73:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  74:/users/hunter/downloads/tmk_core/common/avr/timer.c **** inline
+  75:/users/hunter/downloads/tmk_core/common/avr/timer.c **** uint32_t timer_read32(void)
+  76:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+ 110               		.loc 1 76 0
+ 111               		.cfi_startproc
+ 112               	/* prologue: function */
+ 113               	/* frame size = 0 */
+ 114               	/* stack size = 0 */
+ 115               	.L__stack_usage = 0
+  77:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint32_t t;
+  78:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  79:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint8_t sreg = SREG;
+ 116               		.loc 1 79 0
+ 117 0000 2FB7      		in r18,__SREG__
+ 118               	.LVL2:
+  80:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     cli();
+ 119               		.loc 1 80 0
+ 120               	/* #APP */
+ 121               	 ;  80 "/users/hunter/downloads/tmk_core/common/avr/timer.c" 1
+ 122 0002 F894      		cli
+ 123               	 ;  0 "" 2
+  81:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     t = timer_count;
+ 124               		.loc 1 81 0
+ 125               	/* #NOAPP */
+ 126 0004 6091 0000 		lds r22,timer_count
+ 127 0008 7091 0000 		lds r23,timer_count+1
+ 128 000c 8091 0000 		lds r24,timer_count+2
+ 129 0010 9091 0000 		lds r25,timer_count+3
+ 130               	.LVL3:
+  82:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     SREG = sreg;
+ 131               		.loc 1 82 0
+ 132 0014 2FBF      		out __SREG__,r18
+ 133               	/* epilogue start */
+  83:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  84:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     return t;
+  85:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 134               		.loc 1 85 0
+ 135 0016 0895      		ret
+ 136               		.cfi_endproc
+ 137               	.LFE3:
+ 139               		.section	.text.timer_elapsed,"ax",@progbits
+ 140               	.global	timer_elapsed
+ 142               	timer_elapsed:
+ 143               	.LFB4:
+  86:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  87:/users/hunter/downloads/tmk_core/common/avr/timer.c **** inline
+  88:/users/hunter/downloads/tmk_core/common/avr/timer.c **** uint16_t timer_elapsed(uint16_t last)
+  89:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+ 144               		.loc 1 89 0
+ 145               		.cfi_startproc
+ 146               	.LVL4:
+ 147 0000 CF92      		push r12
+ 148               	.LCFI0:
+ 149               		.cfi_def_cfa_offset 3
+ 150               		.cfi_offset 12, -2
+ 151 0002 DF92      		push r13
+ 152               	.LCFI1:
+ 153               		.cfi_def_cfa_offset 4
+ 154               		.cfi_offset 13, -3
+ 155 0004 EF92      		push r14
+ 156               	.LCFI2:
+ 157               		.cfi_def_cfa_offset 5
+ 158               		.cfi_offset 14, -4
+ 159 0006 FF92      		push r15
+ 160               	.LCFI3:
+ 161               		.cfi_def_cfa_offset 6
+ 162               		.cfi_offset 15, -5
+ 163 0008 0F93      		push r16
+ 164               	.LCFI4:
+ 165               		.cfi_def_cfa_offset 7
+ 166               		.cfi_offset 16, -6
+ 167 000a 1F93      		push r17
+ 168               	.LCFI5:
+ 169               		.cfi_def_cfa_offset 8
+ 170               		.cfi_offset 17, -7
+ 171               	/* prologue: function */
+ 172               	/* frame size = 0 */
+ 173               	/* stack size = 6 */
+ 174               	.L__stack_usage = 6
+  90:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint32_t t;
+  91:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  92:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint8_t sreg = SREG;
+ 175               		.loc 1 92 0
+ 176 000c 2FB7      		in r18,__SREG__
+ 177               	.LVL5:
+  93:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     cli();
+ 178               		.loc 1 93 0
+ 179               	/* #APP */
+ 180               	 ;  93 "/users/hunter/downloads/tmk_core/common/avr/timer.c" 1
+ 181 000e F894      		cli
+ 182               	 ;  0 "" 2
+  94:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     t = timer_count;
+ 183               		.loc 1 94 0
+ 184               	/* #NOAPP */
+ 185 0010 4091 0000 		lds r20,timer_count
+ 186 0014 5091 0000 		lds r21,timer_count+1
+ 187 0018 6091 0000 		lds r22,timer_count+2
+ 188 001c 7091 0000 		lds r23,timer_count+3
+ 189               	.LVL6:
+  95:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     SREG = sreg;
+ 190               		.loc 1 95 0
+ 191 0020 2FBF      		out __SREG__,r18
+  96:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+  97:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     return TIMER_DIFF_16((t & 0xFFFF), last);
+ 192               		.loc 1 97 0
+ 193 0022 6A01      		movw r12,r20
+ 194 0024 7B01      		movw r14,r22
+ 195 0026 EE24      		clr r14
+ 196 0028 FF24      		clr r15
+ 197 002a 8C01      		movw r16,r24
+ 198 002c 30E0      		ldi r19,0
+ 199 002e 20E0      		ldi r18,0
+ 200               	.LVL7:
+ 201 0030 C016      		cp r12,r16
+ 202 0032 D106      		cpc r13,r17
+ 203 0034 E206      		cpc r14,r18
+ 204 0036 F306      		cpc r15,r19
+ 205 0038 00F0      		brlo .L6
+ 206               	.LVL8:
+ 207               	.L8:
+ 208               		.loc 1 97 0 is_stmt 0 discriminator 2
+ 209 003a 481B      		sub r20,r24
+ 210 003c 590B      		sbc r21,r25
+  98:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 211               		.loc 1 98 0 is_stmt 1 discriminator 2
+ 212 003e CA01      		movw r24,r20
+ 213               	.LVL9:
+ 214               	/* epilogue start */
+ 215 0040 1F91      		pop r17
+ 216 0042 0F91      		pop r16
+ 217               	.LVL10:
+ 218 0044 FF90      		pop r15
+ 219 0046 EF90      		pop r14
+ 220 0048 DF90      		pop r13
+ 221 004a CF90      		pop r12
+ 222 004c 0895      		ret
+ 223               	.LVL11:
+ 224               	.L6:
+  97:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 225               		.loc 1 97 0 discriminator 2
+ 226 004e 4150      		subi r20,1
+ 227 0050 5109      		sbc r21,__zero_reg__
+ 228               	.LVL12:
+ 229 0052 00C0      		rjmp .L8
+ 230               		.cfi_endproc
+ 231               	.LFE4:
+ 233               		.section	.text.timer_elapsed32,"ax",@progbits
+ 234               	.global	timer_elapsed32
+ 236               	timer_elapsed32:
+ 237               	.LFB5:
+  99:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+ 100:/users/hunter/downloads/tmk_core/common/avr/timer.c **** inline
+ 101:/users/hunter/downloads/tmk_core/common/avr/timer.c **** uint32_t timer_elapsed32(uint32_t last)
+ 102:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+ 238               		.loc 1 102 0
+ 239               		.cfi_startproc
+ 240               	.LVL13:
+ 241               	/* prologue: function */
+ 242               	/* frame size = 0 */
+ 243               	/* stack size = 0 */
+ 244               	.L__stack_usage = 0
+ 245 0000 AB01      		movw r20,r22
+ 246 0002 BC01      		movw r22,r24
+ 247               	.LVL14:
+ 103:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint32_t t;
+ 104:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+ 105:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     uint8_t sreg = SREG;
+ 248               		.loc 1 105 0
+ 249 0004 2FB7      		in r18,__SREG__
+ 250               	.LVL15:
+ 106:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     cli();
+ 251               		.loc 1 106 0
+ 252               	/* #APP */
+ 253               	 ;  106 "/users/hunter/downloads/tmk_core/common/avr/timer.c" 1
+ 254 0006 F894      		cli
+ 255               	 ;  0 "" 2
+ 107:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     t = timer_count;
+ 256               		.loc 1 107 0
+ 257               	/* #NOAPP */
+ 258 0008 8091 0000 		lds r24,timer_count
+ 259 000c 9091 0000 		lds r25,timer_count+1
+ 260 0010 A091 0000 		lds r26,timer_count+2
+ 261 0014 B091 0000 		lds r27,timer_count+3
+ 262               	.LVL16:
+ 108:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     SREG = sreg;
+ 263               		.loc 1 108 0
+ 264 0018 2FBF      		out __SREG__,r18
+ 109:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+ 110:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     return TIMER_DIFF_32(t, last);
+ 265               		.loc 1 110 0
+ 266 001a 8417      		cp r24,r20
+ 267 001c 9507      		cpc r25,r21
+ 268 001e A607      		cpc r26,r22
+ 269 0020 B707      		cpc r27,r23
+ 270 0022 00F0      		brlo .L10
+ 271               	.LVL17:
+ 272               	.L12:
+ 273               		.loc 1 110 0 is_stmt 0 discriminator 2
+ 274 0024 841B      		sub r24,r20
+ 275 0026 950B      		sbc r25,r21
+ 276 0028 A60B      		sbc r26,r22
+ 277 002a B70B      		sbc r27,r23
+ 111:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 278               		.loc 1 111 0 is_stmt 1 discriminator 2
+ 279 002c BC01      		movw r22,r24
+ 280 002e CD01      		movw r24,r26
+ 281               	/* epilogue start */
+ 282 0030 0895      		ret
+ 283               	.LVL18:
+ 284               	.L10:
+ 110:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 285               		.loc 1 110 0 discriminator 2
+ 286 0032 0197      		sbiw r24,1
+ 287 0034 A109      		sbc r26,__zero_reg__
+ 288 0036 B109      		sbc r27,__zero_reg__
+ 289               	.LVL19:
+ 290 0038 00C0      		rjmp .L12
+ 291               		.cfi_endproc
+ 292               	.LFE5:
+ 294               		.section	.text.__vector_21,"ax",@progbits
+ 295               	.global	__vector_21
+ 297               	__vector_21:
+ 298               	.LFB6:
+ 112:/users/hunter/downloads/tmk_core/common/avr/timer.c **** 
+ 113:/users/hunter/downloads/tmk_core/common/avr/timer.c **** // excecuted once per 1ms.(excess for just timer count?)
+ 114:/users/hunter/downloads/tmk_core/common/avr/timer.c **** ISR(TIMER0_COMPA_vect)
+ 115:/users/hunter/downloads/tmk_core/common/avr/timer.c **** {
+ 299               		.loc 1 115 0
+ 300               		.cfi_startproc
+ 301 0000 1F92      		push r1
+ 302               	.LCFI6:
+ 303               		.cfi_def_cfa_offset 3
+ 304               		.cfi_offset 1, -2
+ 305 0002 0F92      		push r0
+ 306               	.LCFI7:
+ 307               		.cfi_def_cfa_offset 4
+ 308               		.cfi_offset 0, -3
+ 309 0004 0FB6      		in r0,__SREG__
+ 310 0006 0F92      		push r0
+ 311 0008 1124      		clr __zero_reg__
+ 312 000a 8F93      		push r24
+ 313               	.LCFI8:
+ 314               		.cfi_def_cfa_offset 5
+ 315               		.cfi_offset 24, -4
+ 316 000c 9F93      		push r25
+ 317               	.LCFI9:
+ 318               		.cfi_def_cfa_offset 6
+ 319               		.cfi_offset 25, -5
+ 320 000e AF93      		push r26
+ 321               	.LCFI10:
+ 322               		.cfi_def_cfa_offset 7
+ 323               		.cfi_offset 26, -6
+ 324 0010 BF93      		push r27
+ 325               	.LCFI11:
+ 326               		.cfi_def_cfa_offset 8
+ 327               		.cfi_offset 27, -7
+ 328               	/* prologue: Signal */
+ 329               	/* frame size = 0 */
+ 330               	/* stack size = 7 */
+ 331               	.L__stack_usage = 7
+ 116:/users/hunter/downloads/tmk_core/common/avr/timer.c ****     timer_count++;
+ 332               		.loc 1 116 0
+ 333 0012 8091 0000 		lds r24,timer_count
+ 334 0016 9091 0000 		lds r25,timer_count+1
+ 335 001a A091 0000 		lds r26,timer_count+2
+ 336 001e B091 0000 		lds r27,timer_count+3
+ 337 0022 0196      		adiw r24,1
+ 338 0024 A11D      		adc r26,__zero_reg__
+ 339 0026 B11D      		adc r27,__zero_reg__
+ 340 0028 8093 0000 		sts timer_count,r24
+ 341 002c 9093 0000 		sts timer_count+1,r25
+ 342 0030 A093 0000 		sts timer_count+2,r26
+ 343 0034 B093 0000 		sts timer_count+3,r27
+ 344               	/* epilogue start */
+ 117:/users/hunter/downloads/tmk_core/common/avr/timer.c **** }
+ 345               		.loc 1 117 0
+ 346 0038 BF91      		pop r27
+ 347 003a AF91      		pop r26
+ 348 003c 9F91      		pop r25
+ 349 003e 8F91      		pop r24
+ 350 0040 0F90      		pop r0
+ 351 0042 0FBE      		out __SREG__,r0
+ 352 0044 0F90      		pop r0
+ 353 0046 1F90      		pop r1
+ 354 0048 1895      		reti
+ 355               		.cfi_endproc
+ 356               	.LFE6:
+ 358               	.global	timer_count
+ 359               		.section	.bss.timer_count,"aw",@nobits
+ 362               	timer_count:
+ 363 0000 0000 0000 		.zero	4
+ 364               		.text
+ 365               	.Letext0:
+ 366               		.file 2 "/opt/local/avr/include/stdint.h"
+ 367               		.file 3 "/users/hunter/downloads/tmk_core/common/timer.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 timer.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:13     .text.timer_init:0000000000000000 timer_init
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:42     .text.timer_clear:0000000000000000 timer_clear
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:362    .bss.timer_count:0000000000000000 timer_count
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:75     .text.timer_read:0000000000000000 timer_read
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:108    .text.timer_read32:0000000000000000 timer_read32
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:142    .text.timer_elapsed:0000000000000000 timer_elapsed
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:236    .text.timer_elapsed32:0000000000000000 timer_elapsed32
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//cc42oYH4.s:297    .text.__vector_21:0000000000000000 __vector_21
+
+UNDEFINED SYMBOLS
+__do_clear_bss

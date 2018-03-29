@@ -1,0 +1,885 @@
+   1               		.file	"matrix.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.matrix_init,"ax",@progbits
+  11               	.global	matrix_init
+  13               	matrix_init:
+  14               	.LFB13:
+  15               		.file 1 "matrix.c"
+   1:matrix.c      **** /*
+   2:matrix.c      **** Copyright 2011 Jun Wako <wakojun@gmail.com>
+   3:matrix.c      **** 
+   4:matrix.c      **** This program is free software: you can redistribute it and/or modify
+   5:matrix.c      **** it under the terms of the GNU General Public License as published by
+   6:matrix.c      **** the Free Software Foundation, either version 2 of the License, or
+   7:matrix.c      **** (at your option) any later version.
+   8:matrix.c      **** 
+   9:matrix.c      **** This program is distributed in the hope that it will be useful,
+  10:matrix.c      **** but WITHOUT ANY WARRANTY; without even the implied warranty of
+  11:matrix.c      **** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  12:matrix.c      **** GNU General Public License for more details.
+  13:matrix.c      **** 
+  14:matrix.c      **** You should have received a copy of the GNU General Public License
+  15:matrix.c      **** along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  16:matrix.c      **** */
+  17:matrix.c      **** 
+  18:matrix.c      **** #include <stdint.h>
+  19:matrix.c      **** #include <stdbool.h>
+  20:matrix.c      **** #include <avr/io.h>
+  21:matrix.c      **** #include <util/delay.h>
+  22:matrix.c      **** #include "print.h"
+  23:matrix.c      **** #include "util.h"
+  24:matrix.c      **** #include "debug.h"
+  25:matrix.c      **** #include "ps2.h"
+  26:matrix.c      **** #include "matrix.h"
+  27:matrix.c      **** 
+  28:matrix.c      **** 
+  29:matrix.c      **** static void matrix_make(uint8_t code);
+  30:matrix.c      **** static void matrix_break(uint8_t code);
+  31:matrix.c      **** 
+  32:matrix.c      **** 
+  33:matrix.c      **** /*
+  34:matrix.c      ****  * Matrix Array usage:
+  35:matrix.c      ****  * 'Scan Code Set 3' is assigned into 17x8 cell matrix.
+  36:matrix.c      ****  *
+  37:matrix.c      ****  *    8bit wide
+  38:matrix.c      ****  *   +---------+
+  39:matrix.c      ****  *  0|         |
+  40:matrix.c      ****  *  :|         | 0x00-0x87
+  41:matrix.c      ****  *  ;|         |
+  42:matrix.c      ****  * 17|         |
+  43:matrix.c      ****  *   +---------+
+  44:matrix.c      ****  */
+  45:matrix.c      **** static uint8_t matrix[MATRIX_ROWS];
+  46:matrix.c      **** #define ROW(code)      (code>>3)
+  47:matrix.c      **** #define COL(code)      (code&0x07)
+  48:matrix.c      **** 
+  49:matrix.c      **** 
+  50:matrix.c      **** void matrix_init(void)
+  51:matrix.c      **** {
+  16               		.loc 1 51 0
+  17               		.cfi_startproc
+  18               	/* prologue: function */
+  19               	/* frame size = 0 */
+  20               	/* stack size = 0 */
+  21               	.L__stack_usage = 0
+  52:matrix.c      ****     debug_enable = true;
+  22               		.loc 1 52 0
+  23 0000 8091 0000 		lds r24,debug_config
+  24 0004 8160      		ori r24,lo8(1<<0)
+  25 0006 8093 0000 		sts debug_config,r24
+  53:matrix.c      ****     //debug_matrix = true;
+  54:matrix.c      ****     //debug_keyboard = true;
+  55:matrix.c      ****     //debug_mouse = false;
+  56:matrix.c      **** 
+  57:matrix.c      ****     ps2_host_init();
+  26               		.loc 1 57 0
+  27 000a 0E94 0000 		call ps2_host_init
+  28               	.LVL0:
+  29 000e E0E0      		ldi r30,lo8(matrix)
+  30 0010 F0E0      		ldi r31,hi8(matrix)
+  31               	.LVL1:
+  32               	.L2:
+  33               	.LBB2:
+  58:matrix.c      **** 
+  59:matrix.c      ****     // initialize matrix state: all keys off
+  60:matrix.c      ****     for (uint8_t i=0; i < MATRIX_ROWS; i++) matrix[i] = 0x00;
+  34               		.loc 1 60 0 discriminator 3
+  35 0012 1192      		st Z+,__zero_reg__
+  36               	.LVL2:
+  37 0014 80E0      		ldi r24,hi8(matrix+17)
+  38 0016 E030      		cpi r30,lo8(matrix+17)
+  39 0018 F807      		cpc r31,r24
+  40 001a 01F4      		brne .L2
+  41               	/* epilogue start */
+  42               	.LBE2:
+  61:matrix.c      **** 
+  62:matrix.c      ****     return;
+  63:matrix.c      **** }
+  43               		.loc 1 63 0
+  44 001c 0895      		ret
+  45               		.cfi_endproc
+  46               	.LFE13:
+  48               		.section	.text.matrix_scan,"ax",@progbits
+  49               	.global	matrix_scan
+  51               	matrix_scan:
+  52               	.LFB14:
+  64:matrix.c      **** 
+  65:matrix.c      **** uint8_t matrix_scan(void)
+  66:matrix.c      **** {
+  53               		.loc 1 66 0
+  54               		.cfi_startproc
+  55 0000 CF93      		push r28
+  56               	.LCFI0:
+  57               		.cfi_def_cfa_offset 3
+  58               		.cfi_offset 28, -2
+  59 0002 DF93      		push r29
+  60               	.LCFI1:
+  61               		.cfi_def_cfa_offset 4
+  62               		.cfi_offset 29, -3
+  63               	/* prologue: function */
+  64               	/* frame size = 0 */
+  65               	/* stack size = 2 */
+  66               	.L__stack_usage = 2
+  67:matrix.c      **** 
+  68:matrix.c      ****     // scan code reading states
+  69:matrix.c      ****     static enum {
+  70:matrix.c      ****         RESET,
+  71:matrix.c      ****         RESET_RESPONSE,
+  72:matrix.c      ****         KBD_ID0,
+  73:matrix.c      ****         KBD_ID1,
+  74:matrix.c      ****         CONFIG,
+  75:matrix.c      ****         READY,
+  76:matrix.c      ****         F0,
+  77:matrix.c      ****     } state = RESET;
+  78:matrix.c      **** 
+  79:matrix.c      ****     uint8_t code;
+  80:matrix.c      ****     if ((code = ps2_host_recv())) {
+  67               		.loc 1 80 0
+  68 0004 0E94 0000 		call ps2_host_recv
+  69               	.LVL3:
+  70 0008 C82F      		mov r28,r24
+  71               	.LVL4:
+  72 000a 8823      		tst r24
+  73 000c 01F0      		breq .L6
+  81:matrix.c      ****         debug("r"); debug_hex(code); debug(" ");
+  74               		.loc 1 81 0
+  75 000e 8091 0000 		lds r24,debug_config
+  76               	.LVL5:
+  77 0012 80FF      		sbrs r24,0
+  78 0014 00C0      		rjmp .L7
+  79               		.loc 1 81 0 is_stmt 0 discriminator 1
+  80 0016 80E0      		ldi r24,lo8(__c.1946)
+  81 0018 90E0      		ldi r25,hi8(__c.1946)
+  82 001a 0E94 0000 		call xputs
+  83               	.LVL6:
+  84               	.L7:
+  85               		.loc 1 81 0 discriminator 3
+  86 001e 8091 0000 		lds r24,debug_config
+  87 0022 80FF      		sbrs r24,0
+  88 0024 00C0      		rjmp .L8
+  89               		.loc 1 81 0 discriminator 4
+  90 0026 1F92      		push __zero_reg__
+  91               	.LCFI2:
+  92               		.cfi_def_cfa_offset 5
+  93 0028 CF93      		push r28
+  94               	.LCFI3:
+  95               		.cfi_def_cfa_offset 6
+  96 002a 80E0      		ldi r24,lo8(__c.1948)
+  97 002c 90E0      		ldi r25,hi8(__c.1948)
+  98 002e 9F93      		push r25
+  99               	.LCFI4:
+ 100               		.cfi_def_cfa_offset 7
+ 101 0030 8F93      		push r24
+ 102               	.LCFI5:
+ 103               		.cfi_def_cfa_offset 8
+ 104 0032 0E94 0000 		call __xprintf
+ 105               	.LVL7:
+ 106 0036 0F90      		pop __tmp_reg__
+ 107 0038 0F90      		pop __tmp_reg__
+ 108 003a 0F90      		pop __tmp_reg__
+ 109 003c 0F90      		pop __tmp_reg__
+ 110               	.LCFI6:
+ 111               		.cfi_def_cfa_offset 4
+ 112               	.L8:
+ 113               		.loc 1 81 0 discriminator 6
+ 114 003e 8091 0000 		lds r24,debug_config
+ 115 0042 80FF      		sbrs r24,0
+ 116 0044 00C0      		rjmp .L6
+ 117               		.loc 1 81 0 discriminator 7
+ 118 0046 80E0      		ldi r24,lo8(__c.1950)
+ 119 0048 90E0      		ldi r25,hi8(__c.1950)
+ 120 004a 0E94 0000 		call xputs
+ 121               	.LVL8:
+ 122               	.L6:
+  82:matrix.c      ****     }
+  83:matrix.c      **** 
+  84:matrix.c      ****     switch (state) {
+ 123               		.loc 1 84 0 is_stmt 1
+ 124 004e E091 0000 		lds r30,state.1944
+ 125 0052 E730      		cpi r30,lo8(7)
+ 126 0054 00F0      		brlo .+2
+ 127 0056 00C0      		rjmp .L10
+ 128 0058 F0E0      		ldi r31,0
+ 129 005a E050      		subi r30,lo8(-(gs(.L12)))
+ 130 005c F040      		sbci r31,hi8(-(gs(.L12)))
+ 131 005e 0C94 0000 		jmp __tablejump2__
+ 132               		.p2align	1
+ 133               	.L12:
+ 134 0062 0000      		.word gs(.L11)
+ 135 0064 0000      		.word gs(.L13)
+ 136 0066 0000      		.word gs(.L14)
+ 137 0068 0000      		.word gs(.L15)
+ 138 006a 0000      		.word gs(.L16)
+ 139 006c 0000      		.word gs(.L17)
+ 140 006e 0000      		.word gs(.L18)
+ 141               	.L11:
+  85:matrix.c      ****         case RESET:
+  86:matrix.c      ****             debug("wFF ");
+ 142               		.loc 1 86 0
+ 143 0070 8091 0000 		lds r24,debug_config
+ 144 0074 80FF      		sbrs r24,0
+ 145 0076 00C0      		rjmp .L19
+ 146               		.loc 1 86 0 is_stmt 0 discriminator 1
+ 147 0078 80E0      		ldi r24,lo8(__c.1953)
+ 148 007a 90E0      		ldi r25,hi8(__c.1953)
+ 149 007c 0E94 0000 		call xputs
+ 150               	.LVL9:
+ 151               	.L19:
+  87:matrix.c      ****             if (ps2_host_send(0xFF) == 0xFA) {
+ 152               		.loc 1 87 0 is_stmt 1
+ 153 0080 8FEF      		ldi r24,lo8(-1)
+ 154 0082 0E94 0000 		call ps2_host_send
+ 155               	.LVL10:
+ 156 0086 8A3F      		cpi r24,lo8(-6)
+ 157 0088 01F4      		brne .L10
+  88:matrix.c      ****                 debug("[ack]\nRESET_RESPONSE: ");
+ 158               		.loc 1 88 0
+ 159 008a 8091 0000 		lds r24,debug_config
+ 160 008e 80FF      		sbrs r24,0
+ 161 0090 00C0      		rjmp .L21
+ 162               		.loc 1 88 0 is_stmt 0 discriminator 1
+ 163 0092 80E0      		ldi r24,lo8(__c.1955)
+ 164 0094 90E0      		ldi r25,hi8(__c.1955)
+ 165 0096 0E94 0000 		call xputs
+ 166               	.LVL11:
+ 167               	.L21:
+  89:matrix.c      ****                 state = RESET_RESPONSE;
+ 168               		.loc 1 89 0 is_stmt 1
+ 169 009a 81E0      		ldi r24,lo8(1)
+ 170               	.L117:
+  90:matrix.c      ****             }
+  91:matrix.c      ****             break;
+  92:matrix.c      ****         case RESET_RESPONSE:
+  93:matrix.c      ****             if (code == 0xAA) {
+  94:matrix.c      ****                 debug("[ok]\nKBD_ID: ");
+  95:matrix.c      ****                 state = KBD_ID0;
+  96:matrix.c      ****             } else if (code) {
+  97:matrix.c      ****                 debug("err\nRESET: ");
+  98:matrix.c      ****                 state = RESET;
+  99:matrix.c      ****             }
+ 100:matrix.c      ****             break;
+ 101:matrix.c      ****         // after reset receive keyboad ID(2 bytes)
+ 102:matrix.c      ****         case KBD_ID0:
+ 103:matrix.c      ****             if (code) {
+ 104:matrix.c      ****                 state = KBD_ID1;
+ 171               		.loc 1 104 0
+ 172 009c 8093 0000 		sts state.1944,r24
+ 173 00a0 00C0      		rjmp .L10
+ 174               	.L13:
+  93:matrix.c      ****                 debug("[ok]\nKBD_ID: ");
+ 175               		.loc 1 93 0
+ 176 00a2 CA3A      		cpi r28,lo8(-86)
+ 177 00a4 01F4      		brne .L22
+  94:matrix.c      ****                 state = KBD_ID0;
+ 178               		.loc 1 94 0
+ 179 00a6 8091 0000 		lds r24,debug_config
+ 180 00aa 80FF      		sbrs r24,0
+ 181 00ac 00C0      		rjmp .L23
+  94:matrix.c      ****                 state = KBD_ID0;
+ 182               		.loc 1 94 0 is_stmt 0 discriminator 1
+ 183 00ae 80E0      		ldi r24,lo8(__c.1959)
+ 184 00b0 90E0      		ldi r25,hi8(__c.1959)
+ 185 00b2 0E94 0000 		call xputs
+ 186               	.LVL12:
+ 187               	.L23:
+  95:matrix.c      ****             } else if (code) {
+ 188               		.loc 1 95 0 is_stmt 1
+ 189 00b6 82E0      		ldi r24,lo8(2)
+ 190 00b8 00C0      		rjmp .L117
+ 191               	.L22:
+  96:matrix.c      ****                 debug("err\nRESET: ");
+ 192               		.loc 1 96 0
+ 193 00ba CC23      		tst r28
+ 194 00bc 01F0      		breq .L10
+  97:matrix.c      ****                 state = RESET;
+ 195               		.loc 1 97 0
+ 196 00be 8091 0000 		lds r24,debug_config
+ 197 00c2 80FF      		sbrs r24,0
+ 198 00c4 00C0      		rjmp .L25
+  97:matrix.c      ****                 state = RESET;
+ 199               		.loc 1 97 0 is_stmt 0 discriminator 1
+ 200 00c6 80E0      		ldi r24,lo8(__c.1961)
+ 201 00c8 90E0      		ldi r25,hi8(__c.1961)
+ 202 00ca 0E94 0000 		call xputs
+ 203               	.LVL13:
+ 204               	.L25:
+  98:matrix.c      ****             }
+ 205               		.loc 1 98 0 is_stmt 1
+ 206 00ce 1092 0000 		sts state.1944,__zero_reg__
+ 207               	.LVL14:
+ 208               	.L10:
+ 105:matrix.c      ****             }
+ 106:matrix.c      ****             break;
+ 107:matrix.c      ****         case KBD_ID1:
+ 108:matrix.c      ****             if (code) {
+ 109:matrix.c      ****                 debug("\nCONFIG: ");
+ 110:matrix.c      ****                 state = CONFIG;
+ 111:matrix.c      ****             }
+ 112:matrix.c      ****             break;
+ 113:matrix.c      ****         case CONFIG:
+ 114:matrix.c      ****             debug("wF8 ");
+ 115:matrix.c      ****             if (ps2_host_send(0xF8) == 0xFA) {
+ 116:matrix.c      ****                 debug("[ack]\nREADY\n");
+ 117:matrix.c      ****                 state = READY;
+ 118:matrix.c      ****             }
+ 119:matrix.c      ****             break;
+ 120:matrix.c      ****         case READY:
+ 121:matrix.c      ****             switch (code) {
+ 122:matrix.c      ****                 case 0x00:
+ 123:matrix.c      ****                     break;
+ 124:matrix.c      ****                 case 0xF0:
+ 125:matrix.c      ****                     state = F0;
+ 126:matrix.c      ****                     debug(" ");
+ 127:matrix.c      ****                     break;
+ 128:matrix.c      ****                 default:    // normal key make
+ 129:matrix.c      ****                     if (code < 0x88) {
+ 130:matrix.c      ****                         matrix_make(code);
+ 131:matrix.c      ****                     } else {
+ 132:matrix.c      ****                         debug("unexpected scan code at READY: "); debug_hex(code); debug("\n");
+ 133:matrix.c      ****                     }
+ 134:matrix.c      ****                     state = READY;
+ 135:matrix.c      ****                     debug("\n");
+ 136:matrix.c      ****             }
+ 137:matrix.c      ****             break;
+ 138:matrix.c      ****         case F0:    // Break code
+ 139:matrix.c      ****             switch (code) {
+ 140:matrix.c      ****                 case 0x00:
+ 141:matrix.c      ****                     break;
+ 142:matrix.c      ****                 default:
+ 143:matrix.c      ****                     if (code < 0x88) {
+ 144:matrix.c      ****                         matrix_break(code);
+ 145:matrix.c      ****                     } else {
+ 146:matrix.c      ****                         debug("unexpected scan code at F0: "); debug_hex(code); debug("\n");
+ 147:matrix.c      ****                     }
+ 148:matrix.c      ****                     state = READY;
+ 149:matrix.c      ****                     debug("\n");
+ 150:matrix.c      ****             }
+ 151:matrix.c      ****             break;
+ 152:matrix.c      ****     }
+ 153:matrix.c      ****     return 1;
+ 154:matrix.c      **** }
+ 209               		.loc 1 154 0
+ 210 00d2 81E0      		ldi r24,lo8(1)
+ 211               	/* epilogue start */
+ 212 00d4 DF91      		pop r29
+ 213 00d6 CF91      		pop r28
+ 214 00d8 0895      		ret
+ 215               	.LVL15:
+ 216               	.L14:
+ 103:matrix.c      ****                 state = KBD_ID1;
+ 217               		.loc 1 103 0
+ 218 00da CC23      		tst r28
+ 219 00dc 01F0      		breq .L10
+ 104:matrix.c      ****             }
+ 220               		.loc 1 104 0
+ 221 00de 83E0      		ldi r24,lo8(3)
+ 222 00e0 00C0      		rjmp .L117
+ 223               	.L15:
+ 108:matrix.c      ****                 debug("\nCONFIG: ");
+ 224               		.loc 1 108 0
+ 225 00e2 CC23      		tst r28
+ 226 00e4 01F0      		breq .L10
+ 109:matrix.c      ****                 state = CONFIG;
+ 227               		.loc 1 109 0
+ 228 00e6 8091 0000 		lds r24,debug_config
+ 229 00ea 80FF      		sbrs r24,0
+ 230 00ec 00C0      		rjmp .L26
+ 109:matrix.c      ****                 state = CONFIG;
+ 231               		.loc 1 109 0 is_stmt 0 discriminator 1
+ 232 00ee 80E0      		ldi r24,lo8(__c.1965)
+ 233 00f0 90E0      		ldi r25,hi8(__c.1965)
+ 234 00f2 0E94 0000 		call xputs
+ 235               	.LVL16:
+ 236               	.L26:
+ 110:matrix.c      ****             }
+ 237               		.loc 1 110 0 is_stmt 1
+ 238 00f6 84E0      		ldi r24,lo8(4)
+ 239 00f8 00C0      		rjmp .L117
+ 240               	.L16:
+ 114:matrix.c      ****             if (ps2_host_send(0xF8) == 0xFA) {
+ 241               		.loc 1 114 0
+ 242 00fa 8091 0000 		lds r24,debug_config
+ 243 00fe 80FF      		sbrs r24,0
+ 244 0100 00C0      		rjmp .L27
+ 114:matrix.c      ****             if (ps2_host_send(0xF8) == 0xFA) {
+ 245               		.loc 1 114 0 is_stmt 0 discriminator 1
+ 246 0102 80E0      		ldi r24,lo8(__c.1968)
+ 247 0104 90E0      		ldi r25,hi8(__c.1968)
+ 248 0106 0E94 0000 		call xputs
+ 249               	.LVL17:
+ 250               	.L27:
+ 115:matrix.c      ****                 debug("[ack]\nREADY\n");
+ 251               		.loc 1 115 0 is_stmt 1
+ 252 010a 88EF      		ldi r24,lo8(-8)
+ 253 010c 0E94 0000 		call ps2_host_send
+ 254               	.LVL18:
+ 255 0110 8A3F      		cpi r24,lo8(-6)
+ 256 0112 01F4      		brne .L10
+ 116:matrix.c      ****                 state = READY;
+ 257               		.loc 1 116 0
+ 258 0114 8091 0000 		lds r24,debug_config
+ 259 0118 80FF      		sbrs r24,0
+ 260 011a 00C0      		rjmp .L28
+ 116:matrix.c      ****                 state = READY;
+ 261               		.loc 1 116 0 is_stmt 0 discriminator 1
+ 262 011c 80E0      		ldi r24,lo8(__c.1970)
+ 263 011e 90E0      		ldi r25,hi8(__c.1970)
+ 264 0120 0E94 0000 		call xputs
+ 265               	.LVL19:
+ 266               	.L28:
+ 117:matrix.c      ****             }
+ 267               		.loc 1 117 0 is_stmt 1
+ 268 0124 85E0      		ldi r24,lo8(5)
+ 269 0126 00C0      		rjmp .L117
+ 270               	.L17:
+ 121:matrix.c      ****                 case 0x00:
+ 271               		.loc 1 121 0
+ 272 0128 CC23      		tst r28
+ 273 012a 01F0      		breq .L10
+ 274 012c C03F      		cpi r28,lo8(-16)
+ 275 012e 01F4      		brne .L116
+ 125:matrix.c      ****                     debug(" ");
+ 276               		.loc 1 125 0
+ 277 0130 86E0      		ldi r24,lo8(6)
+ 278 0132 8093 0000 		sts state.1944,r24
+ 126:matrix.c      ****                     break;
+ 279               		.loc 1 126 0
+ 280 0136 8091 0000 		lds r24,debug_config
+ 281 013a 80FF      		sbrs r24,0
+ 282 013c 00C0      		rjmp .L10
+ 126:matrix.c      ****                     break;
+ 283               		.loc 1 126 0 is_stmt 0 discriminator 1
+ 284 013e 80E0      		ldi r24,lo8(__c.1976)
+ 285 0140 90E0      		ldi r25,hi8(__c.1976)
+ 286               	.LVL20:
+ 287               	.L118:
+ 149:matrix.c      ****             }
+ 288               		.loc 1 149 0 is_stmt 1 discriminator 1
+ 289 0142 0E94 0000 		call xputs
+ 290               	.LVL21:
+ 291 0146 00C0      		rjmp .L10
+ 292               	.LVL22:
+ 293               	.L116:
+ 129:matrix.c      ****                         matrix_make(code);
+ 294               		.loc 1 129 0
+ 295 0148 C838      		cpi r28,lo8(-120)
+ 296 014a 00F4      		brsh .L31
+ 297               	.LVL23:
+ 298               	.LBB26:
+ 299               	.LBB27:
+ 155:matrix.c      **** 
+ 156:matrix.c      **** inline
+ 157:matrix.c      **** uint8_t matrix_get_row(uint8_t row)
+ 158:matrix.c      **** {
+ 159:matrix.c      ****     return matrix[row];
+ 160:matrix.c      **** }
+ 161:matrix.c      **** 
+ 162:matrix.c      **** inline
+ 163:matrix.c      **** static void matrix_make(uint8_t code)
+ 164:matrix.c      **** {
+ 165:matrix.c      ****     if (!matrix_is_on(ROW(code), COL(code))) {
+ 300               		.loc 1 165 0
+ 301 014c DC2F      		mov r29,r28
+ 302 014e D770      		andi r29,lo8(7)
+ 303 0150 C695      		lsr r28
+ 304 0152 C695      		lsr r28
+ 305 0154 C695      		lsr r28
+ 306               	.LVL24:
+ 307 0156 6D2F      		mov r22,r29
+ 308 0158 8C2F      		mov r24,r28
+ 309 015a 0E94 0000 		call matrix_is_on
+ 310               	.LVL25:
+ 311 015e 8111      		cpse r24,__zero_reg__
+ 312 0160 00C0      		rjmp .L33
+ 166:matrix.c      ****         matrix[ROW(code)] |= 1<<COL(code);
+ 313               		.loc 1 166 0
+ 314 0162 EC2F      		mov r30,r28
+ 315 0164 F0E0      		ldi r31,0
+ 316 0166 E050      		subi r30,lo8(-(matrix))
+ 317 0168 F040      		sbci r31,hi8(-(matrix))
+ 318 016a 21E0      		ldi r18,lo8(1)
+ 319 016c 30E0      		ldi r19,0
+ 320 016e 00C0      		rjmp 2f
+ 321               		1:
+ 322 0170 220F      		lsl r18
+ 323               		2:
+ 324 0172 DA95      		dec r29
+ 325 0174 02F4      		brpl 1b
+ 326 0176 8081      		ld r24,Z
+ 327 0178 822B      		or r24,r18
+ 328 017a 8083      		st Z,r24
+ 329               	.L33:
+ 330               	.LBE27:
+ 331               	.LBE26:
+ 134:matrix.c      ****                     debug("\n");
+ 332               		.loc 1 134 0
+ 333 017c 85E0      		ldi r24,lo8(5)
+ 334 017e 8093 0000 		sts state.1944,r24
+ 135:matrix.c      ****             }
+ 335               		.loc 1 135 0
+ 336 0182 8091 0000 		lds r24,debug_config
+ 337 0186 80FF      		sbrs r24,0
+ 338 0188 00C0      		rjmp .L10
+ 135:matrix.c      ****             }
+ 339               		.loc 1 135 0 is_stmt 0 discriminator 1
+ 340 018a 80E0      		ldi r24,lo8(__c.1985)
+ 341 018c 90E0      		ldi r25,hi8(__c.1985)
+ 342 018e 00C0      		rjmp .L118
+ 343               	.LVL26:
+ 344               	.L31:
+ 132:matrix.c      ****                     }
+ 345               		.loc 1 132 0 is_stmt 1
+ 346 0190 8091 0000 		lds r24,debug_config
+ 347 0194 80FF      		sbrs r24,0
+ 348 0196 00C0      		rjmp .L34
+ 132:matrix.c      ****                     }
+ 349               		.loc 1 132 0 is_stmt 0 discriminator 1
+ 350 0198 80E0      		ldi r24,lo8(__c.1979)
+ 351 019a 90E0      		ldi r25,hi8(__c.1979)
+ 352 019c 0E94 0000 		call xputs
+ 353               	.LVL27:
+ 354               	.L34:
+ 132:matrix.c      ****                     }
+ 355               		.loc 1 132 0 discriminator 3
+ 356 01a0 8091 0000 		lds r24,debug_config
+ 357 01a4 80FF      		sbrs r24,0
+ 358 01a6 00C0      		rjmp .L35
+ 132:matrix.c      ****                     }
+ 359               		.loc 1 132 0 discriminator 4
+ 360 01a8 1F92      		push __zero_reg__
+ 361               	.LCFI7:
+ 362               		.cfi_def_cfa_offset 5
+ 363 01aa CF93      		push r28
+ 364               	.LCFI8:
+ 365               		.cfi_def_cfa_offset 6
+ 366 01ac 80E0      		ldi r24,lo8(__c.1981)
+ 367 01ae 90E0      		ldi r25,hi8(__c.1981)
+ 368 01b0 9F93      		push r25
+ 369               	.LCFI9:
+ 370               		.cfi_def_cfa_offset 7
+ 371 01b2 8F93      		push r24
+ 372               	.LCFI10:
+ 373               		.cfi_def_cfa_offset 8
+ 374 01b4 0E94 0000 		call __xprintf
+ 375               	.LVL28:
+ 376 01b8 0F90      		pop __tmp_reg__
+ 377 01ba 0F90      		pop __tmp_reg__
+ 378 01bc 0F90      		pop __tmp_reg__
+ 379 01be 0F90      		pop __tmp_reg__
+ 380               	.LCFI11:
+ 381               		.cfi_def_cfa_offset 4
+ 382               	.L35:
+ 132:matrix.c      ****                     }
+ 383               		.loc 1 132 0 discriminator 6
+ 384 01c0 8091 0000 		lds r24,debug_config
+ 385 01c4 80FF      		sbrs r24,0
+ 386 01c6 00C0      		rjmp .L33
+ 132:matrix.c      ****                     }
+ 387               		.loc 1 132 0 discriminator 7
+ 388 01c8 80E0      		ldi r24,lo8(__c.1983)
+ 389 01ca 90E0      		ldi r25,hi8(__c.1983)
+ 390 01cc 0E94 0000 		call xputs
+ 391               	.LVL29:
+ 392 01d0 00C0      		rjmp .L33
+ 393               	.L18:
+ 139:matrix.c      ****                 case 0x00:
+ 394               		.loc 1 139 0 is_stmt 1
+ 395 01d2 CC23      		tst r28
+ 396 01d4 01F4      		brne .+2
+ 397 01d6 00C0      		rjmp .L10
+ 143:matrix.c      ****                         matrix_break(code);
+ 398               		.loc 1 143 0
+ 399 01d8 C838      		cpi r28,lo8(-120)
+ 400 01da 00F4      		brsh .L38
+ 401               	.LVL30:
+ 402               	.LBB28:
+ 403               	.LBB29:
+ 167:matrix.c      ****     }
+ 168:matrix.c      **** }
+ 169:matrix.c      **** 
+ 170:matrix.c      **** inline
+ 171:matrix.c      **** static void matrix_break(uint8_t code)
+ 172:matrix.c      **** {
+ 173:matrix.c      ****     if (matrix_is_on(ROW(code), COL(code))) {
+ 404               		.loc 1 173 0
+ 405 01dc DC2F      		mov r29,r28
+ 406 01de D770      		andi r29,lo8(7)
+ 407 01e0 C695      		lsr r28
+ 408 01e2 C695      		lsr r28
+ 409 01e4 C695      		lsr r28
+ 410               	.LVL31:
+ 411 01e6 6D2F      		mov r22,r29
+ 412 01e8 8C2F      		mov r24,r28
+ 413 01ea 0E94 0000 		call matrix_is_on
+ 414               	.LVL32:
+ 415 01ee 8823      		tst r24
+ 416 01f0 01F0      		breq .L40
+ 174:matrix.c      ****         matrix[ROW(code)] &= ~(1<<COL(code));
+ 417               		.loc 1 174 0
+ 418 01f2 EC2F      		mov r30,r28
+ 419 01f4 F0E0      		ldi r31,0
+ 420 01f6 E050      		subi r30,lo8(-(matrix))
+ 421 01f8 F040      		sbci r31,hi8(-(matrix))
+ 422 01fa 81E0      		ldi r24,lo8(1)
+ 423 01fc 90E0      		ldi r25,0
+ 424 01fe 00C0      		rjmp 2f
+ 425               		1:
+ 426 0200 880F      		lsl r24
+ 427               		2:
+ 428 0202 DA95      		dec r29
+ 429 0204 02F4      		brpl 1b
+ 430 0206 8095      		com r24
+ 431 0208 9081      		ld r25,Z
+ 432 020a 8923      		and r24,r25
+ 433 020c 8083      		st Z,r24
+ 434               	.L40:
+ 435               	.LBE29:
+ 436               	.LBE28:
+ 148:matrix.c      ****                     debug("\n");
+ 437               		.loc 1 148 0
+ 438 020e 85E0      		ldi r24,lo8(5)
+ 439 0210 8093 0000 		sts state.1944,r24
+ 149:matrix.c      ****             }
+ 440               		.loc 1 149 0
+ 441 0214 8091 0000 		lds r24,debug_config
+ 442 0218 80FF      		sbrs r24,0
+ 443 021a 00C0      		rjmp .L10
+ 149:matrix.c      ****             }
+ 444               		.loc 1 149 0 is_stmt 0 discriminator 1
+ 445 021c 80E0      		ldi r24,lo8(__c.1997)
+ 446 021e 90E0      		ldi r25,hi8(__c.1997)
+ 447 0220 00C0      		rjmp .L118
+ 448               	.LVL33:
+ 449               	.L38:
+ 146:matrix.c      ****                     }
+ 450               		.loc 1 146 0 is_stmt 1
+ 451 0222 8091 0000 		lds r24,debug_config
+ 452 0226 80FF      		sbrs r24,0
+ 453 0228 00C0      		rjmp .L41
+ 146:matrix.c      ****                     }
+ 454               		.loc 1 146 0 is_stmt 0 discriminator 1
+ 455 022a 80E0      		ldi r24,lo8(__c.1991)
+ 456 022c 90E0      		ldi r25,hi8(__c.1991)
+ 457 022e 0E94 0000 		call xputs
+ 458               	.LVL34:
+ 459               	.L41:
+ 146:matrix.c      ****                     }
+ 460               		.loc 1 146 0 discriminator 3
+ 461 0232 8091 0000 		lds r24,debug_config
+ 462 0236 80FF      		sbrs r24,0
+ 463 0238 00C0      		rjmp .L42
+ 146:matrix.c      ****                     }
+ 464               		.loc 1 146 0 discriminator 4
+ 465 023a 1F92      		push __zero_reg__
+ 466               	.LCFI12:
+ 467               		.cfi_def_cfa_offset 5
+ 468 023c CF93      		push r28
+ 469               	.LCFI13:
+ 470               		.cfi_def_cfa_offset 6
+ 471 023e 80E0      		ldi r24,lo8(__c.1993)
+ 472 0240 90E0      		ldi r25,hi8(__c.1993)
+ 473 0242 9F93      		push r25
+ 474               	.LCFI14:
+ 475               		.cfi_def_cfa_offset 7
+ 476 0244 8F93      		push r24
+ 477               	.LCFI15:
+ 478               		.cfi_def_cfa_offset 8
+ 479 0246 0E94 0000 		call __xprintf
+ 480               	.LVL35:
+ 481 024a 0F90      		pop __tmp_reg__
+ 482 024c 0F90      		pop __tmp_reg__
+ 483 024e 0F90      		pop __tmp_reg__
+ 484 0250 0F90      		pop __tmp_reg__
+ 485               	.LCFI16:
+ 486               		.cfi_def_cfa_offset 4
+ 487               	.L42:
+ 146:matrix.c      ****                     }
+ 488               		.loc 1 146 0 discriminator 6
+ 489 0252 8091 0000 		lds r24,debug_config
+ 490 0256 80FF      		sbrs r24,0
+ 491 0258 00C0      		rjmp .L40
+ 146:matrix.c      ****                     }
+ 492               		.loc 1 146 0 discriminator 7
+ 493 025a 80E0      		ldi r24,lo8(__c.1995)
+ 494 025c 90E0      		ldi r25,hi8(__c.1995)
+ 495 025e 0E94 0000 		call xputs
+ 496               	.LVL36:
+ 497 0262 00C0      		rjmp .L40
+ 498               		.cfi_endproc
+ 499               	.LFE14:
+ 501               		.section	.text.matrix_get_row,"ax",@progbits
+ 502               	.global	matrix_get_row
+ 504               	matrix_get_row:
+ 505               	.LFB15:
+ 158:matrix.c      ****     return matrix[row];
+ 506               		.loc 1 158 0 is_stmt 1
+ 507               		.cfi_startproc
+ 508               	.LVL37:
+ 509               	/* prologue: function */
+ 510               	/* frame size = 0 */
+ 511               	/* stack size = 0 */
+ 512               	.L__stack_usage = 0
+ 159:matrix.c      **** }
+ 513               		.loc 1 159 0
+ 514 0000 E82F      		mov r30,r24
+ 515 0002 F0E0      		ldi r31,0
+ 516 0004 E050      		subi r30,lo8(-(matrix))
+ 517 0006 F040      		sbci r31,hi8(-(matrix))
+ 160:matrix.c      **** 
+ 518               		.loc 1 160 0
+ 519 0008 8081      		ld r24,Z
+ 520               	.LVL38:
+ 521               	/* epilogue start */
+ 522 000a 0895      		ret
+ 523               		.cfi_endproc
+ 524               	.LFE15:
+ 526               		.section	.progmem.data.__c.1997,"a",@progbits
+ 529               	__c.1997:
+ 530 0000 0A00      		.string	"\n"
+ 531               		.section	.progmem.data.__c.1995,"a",@progbits
+ 534               	__c.1995:
+ 535 0000 0A00      		.string	"\n"
+ 536               		.section	.progmem.data.__c.1993,"a",@progbits
+ 539               	__c.1993:
+ 540 0000 2530 3258 		.string	"%02X"
+ 540      00
+ 541               		.section	.progmem.data.__c.1991,"a",@progbits
+ 544               	__c.1991:
+ 545 0000 756E 6578 		.string	"unexpected scan code at F0: "
+ 545      7065 6374 
+ 545      6564 2073 
+ 545      6361 6E20 
+ 545      636F 6465 
+ 546               		.section	.progmem.data.__c.1985,"a",@progbits
+ 549               	__c.1985:
+ 550 0000 0A00      		.string	"\n"
+ 551               		.section	.progmem.data.__c.1983,"a",@progbits
+ 554               	__c.1983:
+ 555 0000 0A00      		.string	"\n"
+ 556               		.section	.progmem.data.__c.1981,"a",@progbits
+ 559               	__c.1981:
+ 560 0000 2530 3258 		.string	"%02X"
+ 560      00
+ 561               		.section	.progmem.data.__c.1979,"a",@progbits
+ 564               	__c.1979:
+ 565 0000 756E 6578 		.string	"unexpected scan code at READY: "
+ 565      7065 6374 
+ 565      6564 2073 
+ 565      6361 6E20 
+ 565      636F 6465 
+ 566               		.section	.progmem.data.__c.1976,"a",@progbits
+ 569               	__c.1976:
+ 570 0000 2000      		.string	" "
+ 571               		.section	.progmem.data.__c.1970,"a",@progbits
+ 574               	__c.1970:
+ 575 0000 5B61 636B 		.string	"[ack]\nREADY\n"
+ 575      5D0A 5245 
+ 575      4144 590A 
+ 575      00
+ 576               		.section	.progmem.data.__c.1968,"a",@progbits
+ 579               	__c.1968:
+ 580 0000 7746 3820 		.string	"wF8 "
+ 580      00
+ 581               		.section	.progmem.data.__c.1965,"a",@progbits
+ 584               	__c.1965:
+ 585 0000 0A43 4F4E 		.string	"\nCONFIG: "
+ 585      4649 473A 
+ 585      2000 
+ 586               		.section	.progmem.data.__c.1961,"a",@progbits
+ 589               	__c.1961:
+ 590 0000 6572 720A 		.string	"err\nRESET: "
+ 590      5245 5345 
+ 590      543A 2000 
+ 591               		.section	.progmem.data.__c.1959,"a",@progbits
+ 594               	__c.1959:
+ 595 0000 5B6F 6B5D 		.string	"[ok]\nKBD_ID: "
+ 595      0A4B 4244 
+ 595      5F49 443A 
+ 595      2000 
+ 596               		.section	.progmem.data.__c.1955,"a",@progbits
+ 599               	__c.1955:
+ 600 0000 5B61 636B 		.string	"[ack]\nRESET_RESPONSE: "
+ 600      5D0A 5245 
+ 600      5345 545F 
+ 600      5245 5350 
+ 600      4F4E 5345 
+ 601               		.section	.progmem.data.__c.1953,"a",@progbits
+ 604               	__c.1953:
+ 605 0000 7746 4620 		.string	"wFF "
+ 605      00
+ 606               		.section	.bss.state.1944,"aw",@nobits
+ 609               	state.1944:
+ 610 0000 00        		.zero	1
+ 611               		.section	.progmem.data.__c.1950,"a",@progbits
+ 614               	__c.1950:
+ 615 0000 2000      		.string	" "
+ 616               		.section	.progmem.data.__c.1948,"a",@progbits
+ 619               	__c.1948:
+ 620 0000 2530 3258 		.string	"%02X"
+ 620      00
+ 621               		.section	.progmem.data.__c.1946,"a",@progbits
+ 624               	__c.1946:
+ 625 0000 7200      		.string	"r"
+ 626               		.section	.bss.matrix,"aw",@nobits
+ 629               	matrix:
+ 630 0000 0000 0000 		.zero	17
+ 630      0000 0000 
+ 630      0000 0000 
+ 630      0000 0000 
+ 630      00
+ 631               		.text
+ 632               	.Letext0:
+ 633               		.file 2 "../../tmk_core/common/debug.h"
+ 634               		.file 3 "/opt/local/avr/include/stdint.h"
+ 635               		.file 4 "../../tmk_core/common/avr/xprintf.h"
+ 636               		.file 5 "../../tmk_core/protocol/ps2.h"
+ 637               		.file 6 "../../tmk_core/common/matrix.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 matrix.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:13     .text.matrix_init:0000000000000000 matrix_init
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:629    .bss.matrix:0000000000000000 matrix
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:51     .text.matrix_scan:0000000000000000 matrix_scan
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:624    .progmem.data.__c.1946:0000000000000000 __c.1946
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:619    .progmem.data.__c.1948:0000000000000000 __c.1948
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:614    .progmem.data.__c.1950:0000000000000000 __c.1950
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:609    .bss.state.1944:0000000000000000 state.1944
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:604    .progmem.data.__c.1953:0000000000000000 __c.1953
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:599    .progmem.data.__c.1955:0000000000000000 __c.1955
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:594    .progmem.data.__c.1959:0000000000000000 __c.1959
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:589    .progmem.data.__c.1961:0000000000000000 __c.1961
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:584    .progmem.data.__c.1965:0000000000000000 __c.1965
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:579    .progmem.data.__c.1968:0000000000000000 __c.1968
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:574    .progmem.data.__c.1970:0000000000000000 __c.1970
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:569    .progmem.data.__c.1976:0000000000000000 __c.1976
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:549    .progmem.data.__c.1985:0000000000000000 __c.1985
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:564    .progmem.data.__c.1979:0000000000000000 __c.1979
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:559    .progmem.data.__c.1981:0000000000000000 __c.1981
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:554    .progmem.data.__c.1983:0000000000000000 __c.1983
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:529    .progmem.data.__c.1997:0000000000000000 __c.1997
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:544    .progmem.data.__c.1991:0000000000000000 __c.1991
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:539    .progmem.data.__c.1993:0000000000000000 __c.1993
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:534    .progmem.data.__c.1995:0000000000000000 __c.1995
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccQHQigw.s:504    .text.matrix_get_row:0000000000000000 matrix_get_row
+
+UNDEFINED SYMBOLS
+debug_config
+ps2_host_init
+ps2_host_recv
+xputs
+__xprintf
+__tablejump2__
+ps2_host_send
+matrix_is_on
+__do_clear_bss

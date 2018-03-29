@@ -1,0 +1,1814 @@
+   1               		.file	"ps2_interrupt.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.pbuf_dequeue,"ax",@progbits
+  12               	pbuf_dequeue:
+  13               	.LFB8:
+  14               		.file 1 "/users/hunter/downloads/tmk_core/protocol/pbuff.h"
+   1:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** /*--------------------------------------------------------------------
+   2:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****  * Ring buffer to store scan codes from keyboard
+   3:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****  *------------------------------------------------------------------*/
+   4:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+   5:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** #ifndef PBUFF_H
+   6:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** #define PBUFF_H
+   7:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+   8:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** #include "print.h"
+   9:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+  10:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** #define PBUF_SIZE 32
+  11:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static uint16_t pbuf[PBUF_SIZE];
+  12:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static uint16_t pbuf_head = 0;
+  13:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static uint16_t pbuf_tail = 0;
+  14:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static inline void pbuf_enqueue(uint16_t data)
+  15:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** {
+  16:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint8_t sreg = SREG;
+  17:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     cli();
+  18:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint16_t next = (pbuf_head + 1) % PBUF_SIZE;
+  19:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     if (next != pbuf_tail) {
+  20:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         pbuf[pbuf_head] = data;
+  21:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         pbuf_head = next;
+  22:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     } else {
+  23:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         print("pbuf: full\n");
+  24:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     }
+  25:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     SREG = sreg;
+  26:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** }
+  27:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static inline uint16_t pbuf_dequeue(void)
+  28:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** {
+  15               		.loc 1 28 0
+  16               		.cfi_startproc
+  17               	/* prologue: function */
+  18               	/* frame size = 0 */
+  19               	/* stack size = 0 */
+  20               	.L__stack_usage = 0
+  21               	.LVL0:
+  29:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint16_t val = 0;
+  30:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+  31:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint8_t sreg = SREG;
+  22               		.loc 1 31 0
+  23 0000 4FB7      		in r20,__SREG__
+  24               	.LVL1:
+  32:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     cli();
+  25               		.loc 1 32 0
+  26               	/* #APP */
+  27               	 ;  32 "/users/hunter/downloads/tmk_core/protocol/pbuff.h" 1
+  28 0002 F894      		cli
+  29               	 ;  0 "" 2
+  33:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     if (pbuf_head != pbuf_tail) {
+  30               		.loc 1 33 0
+  31               	/* #NOAPP */
+  32 0004 2091 0000 		lds r18,pbuf_tail
+  33 0008 3091 0000 		lds r19,pbuf_tail+1
+  34 000c 8091 0000 		lds r24,pbuf_head
+  35 0010 9091 0000 		lds r25,pbuf_head+1
+  36 0014 8217      		cp r24,r18
+  37 0016 9307      		cpc r25,r19
+  38 0018 01F0      		breq .L3
+  34:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         val = pbuf[pbuf_tail];
+  39               		.loc 1 34 0
+  40 001a F901      		movw r30,r18
+  41 001c EE0F      		lsl r30
+  42 001e FF1F      		rol r31
+  43 0020 E050      		subi r30,lo8(-(pbuf))
+  44 0022 F040      		sbci r31,hi8(-(pbuf))
+  45 0024 8081      		ld r24,Z
+  46 0026 9181      		ldd r25,Z+1
+  47               	.LVL2:
+  35:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         pbuf_tail = (pbuf_tail + 1) % PBUF_SIZE;
+  48               		.loc 1 35 0
+  49 0028 2F5F      		subi r18,-1
+  50 002a 3F4F      		sbci r19,-1
+  51 002c 2F71      		andi r18,31
+  52 002e 3327      		clr r19
+  53 0030 3093 0000 		sts pbuf_tail+1,r19
+  54 0034 2093 0000 		sts pbuf_tail,r18
+  55               	.LVL3:
+  56               	.L2:
+  36:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     }
+  37:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     SREG = sreg;
+  57               		.loc 1 37 0
+  58 0038 4FBF      		out __SREG__,r20
+  59               	/* epilogue start */
+  38:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+  39:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     return val;
+  40:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** }
+  60               		.loc 1 40 0
+  61 003a 0895      		ret
+  62               	.LVL4:
+  63               	.L3:
+  29:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** 
+  64               		.loc 1 29 0
+  65 003c 90E0      		ldi r25,0
+  66 003e 80E0      		ldi r24,0
+  67 0040 00C0      		rjmp .L2
+  68               		.cfi_endproc
+  69               	.LFE8:
+  71               		.section	.text.wait_clock_lo,"ax",@progbits
+  73               	wait_clock_lo:
+  74               	.LFB11:
+  75               		.file 2 "/users/hunter/downloads/tmk_core/protocol/ps2.h"
+   1:/users/hunter/downloads/tmk_core/protocol/ps2.h **** /*
+   2:/users/hunter/downloads/tmk_core/protocol/ps2.h **** Copyright 2010,2011,2012,2013 Jun WAKO <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+   4:/users/hunter/downloads/tmk_core/protocol/ps2.h **** This software is licensed with a Modified BSD License.
+   5:/users/hunter/downloads/tmk_core/protocol/ps2.h **** All of this is supposed to be Free Software, Open Source, DFSG-free,
+   6:/users/hunter/downloads/tmk_core/protocol/ps2.h **** GPL-compatible, and OK to use in both free and proprietary applications.
+   7:/users/hunter/downloads/tmk_core/protocol/ps2.h **** Additions and corrections to this file are welcome.
+   8:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+   9:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  10:/users/hunter/downloads/tmk_core/protocol/ps2.h **** Redistribution and use in source and binary forms, with or without
+  11:/users/hunter/downloads/tmk_core/protocol/ps2.h **** modification, are permitted provided that the following conditions are met:
+  12:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  13:/users/hunter/downloads/tmk_core/protocol/ps2.h **** * Redistributions of source code must retain the above copyright
+  14:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   notice, this list of conditions and the following disclaimer.
+  15:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  16:/users/hunter/downloads/tmk_core/protocol/ps2.h **** * Redistributions in binary form must reproduce the above copyright
+  17:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   notice, this list of conditions and the following disclaimer in
+  18:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   the documentation and/or other materials provided with the
+  19:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   distribution.
+  20:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  21:/users/hunter/downloads/tmk_core/protocol/ps2.h **** * Neither the name of the copyright holders nor the names of
+  22:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   contributors may be used to endorse or promote products derived
+  23:/users/hunter/downloads/tmk_core/protocol/ps2.h ****   from this software without specific prior written permission.
+  24:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  25:/users/hunter/downloads/tmk_core/protocol/ps2.h **** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  26:/users/hunter/downloads/tmk_core/protocol/ps2.h **** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  27:/users/hunter/downloads/tmk_core/protocol/ps2.h **** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  28:/users/hunter/downloads/tmk_core/protocol/ps2.h **** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  29:/users/hunter/downloads/tmk_core/protocol/ps2.h **** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  30:/users/hunter/downloads/tmk_core/protocol/ps2.h **** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  31:/users/hunter/downloads/tmk_core/protocol/ps2.h **** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  32:/users/hunter/downloads/tmk_core/protocol/ps2.h **** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  33:/users/hunter/downloads/tmk_core/protocol/ps2.h **** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  34:/users/hunter/downloads/tmk_core/protocol/ps2.h **** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  35:/users/hunter/downloads/tmk_core/protocol/ps2.h **** POSSIBILITY OF SUCH DAMAGE.
+  36:/users/hunter/downloads/tmk_core/protocol/ps2.h **** */
+  37:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  38:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #ifndef PS2_H
+  39:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_H
+  40:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  41:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #include <stdbool.h>
+  42:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #include "wait.h"
+  43:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #include "ps2_io.h"
+  44:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #include "print.h"
+  45:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  46:/users/hunter/downloads/tmk_core/protocol/ps2.h **** /*
+  47:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * Primitive PS/2 Library for AVR
+  48:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *
+  49:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * PS/2 Resources
+  50:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * --------------
+  51:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * [1] The PS/2 Mouse/Keyboard Protocol
+  52:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * http://www.computer-engineering.org/ps2protocol/
+  53:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * Concise and thorough primer of PS/2 protocol.
+  54:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *
+  55:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * [2] Keyboard and Auxiliary Device Controller
+  56:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * http://www.mcamafia.de/pdf/ibm_hitrc07.pdf
+  57:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * Signal Timing and Format
+  58:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *
+  59:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * [3] Keyboards(101- and 102-key)
+  60:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * http://www.mcamafia.de/pdf/ibm_hitrc11.pdf
+  61:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * Keyboard Layout, Scan Code Set, POR, and Commands.
+  62:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *
+  63:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * [4] PS/2 Reference Manuals
+  64:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * http://www.mcamafia.de/pdf/ibm_hitrc07.pdf
+  65:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * Collection of IBM Personal System/2 documents.
+  66:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *
+  67:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * [5] TrackPoint Engineering Specifications for version 3E
+  68:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * https://web.archive.org/web/20100526161812/http://wwwcssrv.almaden.ibm.com/trackpoint/download.h
+  69:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  */
+  70:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ACK         0xFA
+  71:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_RESEND      0xFE
+  72:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_SET_LED     0xED
+  73:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  74:/users/hunter/downloads/tmk_core/protocol/ps2.h **** // TODO: error numbers
+  75:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_NONE        0
+  76:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_STARTBIT1   1
+  77:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_STARTBIT2   2
+  78:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_STARTBIT3   3
+  79:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_PARITY      0x10
+  80:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_ERR_NODATA      0x20
+  81:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  82:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_LED_SCROLL_LOCK 0
+  83:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_LED_NUM_LOCK    1
+  84:/users/hunter/downloads/tmk_core/protocol/ps2.h **** #define PS2_LED_CAPS_LOCK   2
+  85:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  86:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  87:/users/hunter/downloads/tmk_core/protocol/ps2.h **** extern uint8_t ps2_error;
+  88:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  89:/users/hunter/downloads/tmk_core/protocol/ps2.h **** void ps2_host_init(void);
+  90:/users/hunter/downloads/tmk_core/protocol/ps2.h **** uint8_t ps2_host_send(uint8_t data);
+  91:/users/hunter/downloads/tmk_core/protocol/ps2.h **** uint8_t ps2_host_recv_response(void);
+  92:/users/hunter/downloads/tmk_core/protocol/ps2.h **** uint8_t ps2_host_recv(void);
+  93:/users/hunter/downloads/tmk_core/protocol/ps2.h **** void ps2_host_set_led(uint8_t usb_led);
+  94:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  95:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+  96:/users/hunter/downloads/tmk_core/protocol/ps2.h **** /*--------------------------------------------------------------------
+  97:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  * static functions
+  98:/users/hunter/downloads/tmk_core/protocol/ps2.h ****  *------------------------------------------------------------------*/
+  99:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline uint16_t wait_clock_lo(uint16_t us)
+ 100:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+  76               		.loc 2 100 0
+  77               		.cfi_startproc
+  78               	.LVL5:
+  79 0000 CF93      		push r28
+  80               	.LCFI0:
+  81               		.cfi_def_cfa_offset 3
+  82               		.cfi_offset 28, -2
+  83 0002 DF93      		push r29
+  84               	.LCFI1:
+  85               		.cfi_def_cfa_offset 4
+  86               		.cfi_offset 29, -3
+  87               	/* prologue: function */
+  88               	/* frame size = 0 */
+  89               	/* stack size = 2 */
+  90               	.L__stack_usage = 2
+  91 0004 EC01      		movw r28,r24
+  92               	.LVL6:
+  93               	.L5:
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     while (clock_in()  && us) { asm(""); wait_us(1); us--; }
+  94               		.loc 2 101 0 discriminator 1
+  95 0006 0E94 0000 		call clock_in
+  96               	.LVL7:
+  97 000a 8823      		tst r24
+  98 000c 01F0      		breq .L4
+  99               		.loc 2 101 0 is_stmt 0 discriminator 2
+ 100 000e 2097      		sbiw r28,0
+ 101 0010 01F4      		brne .L7
+ 102               	.L4:
+ 102:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 103:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 103               		.loc 2 103 0 is_stmt 1
+ 104 0012 CE01      		movw r24,r28
+ 105               	/* epilogue start */
+ 106 0014 DF91      		pop r29
+ 107 0016 CF91      		pop r28
+ 108               	.LVL8:
+ 109 0018 0895      		ret
+ 110               	.LVL9:
+ 111               	.L7:
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     while (clock_in()  && us) { asm(""); wait_us(1); us--; }
+ 112               		.loc 2 101 0 discriminator 3
+ 113               	.LVL10:
+ 114               	.LBB27:
+ 115               	.LBB28:
+ 116               		.file 3 "/opt/local/avr/include/util/delay.h"
+   1:/opt/local/avr/include/util/delay.h **** /* Copyright (c) 2002, Marek Michalkiewicz
+   2:/opt/local/avr/include/util/delay.h ****    Copyright (c) 2004,2005,2007 Joerg Wunsch
+   3:/opt/local/avr/include/util/delay.h ****    Copyright (c) 2007  Florin-Viorel Petrov
+   4:/opt/local/avr/include/util/delay.h ****    All rights reserved.
+   5:/opt/local/avr/include/util/delay.h **** 
+   6:/opt/local/avr/include/util/delay.h ****    Redistribution and use in source and binary forms, with or without
+   7:/opt/local/avr/include/util/delay.h ****    modification, are permitted provided that the following conditions are met:
+   8:/opt/local/avr/include/util/delay.h **** 
+   9:/opt/local/avr/include/util/delay.h ****    * Redistributions of source code must retain the above copyright
+  10:/opt/local/avr/include/util/delay.h ****      notice, this list of conditions and the following disclaimer.
+  11:/opt/local/avr/include/util/delay.h **** 
+  12:/opt/local/avr/include/util/delay.h ****    * Redistributions in binary form must reproduce the above copyright
+  13:/opt/local/avr/include/util/delay.h ****      notice, this list of conditions and the following disclaimer in
+  14:/opt/local/avr/include/util/delay.h ****      the documentation and/or other materials provided with the
+  15:/opt/local/avr/include/util/delay.h ****      distribution.
+  16:/opt/local/avr/include/util/delay.h **** 
+  17:/opt/local/avr/include/util/delay.h ****    * Neither the name of the copyright holders nor the names of
+  18:/opt/local/avr/include/util/delay.h ****      contributors may be used to endorse or promote products derived
+  19:/opt/local/avr/include/util/delay.h ****      from this software without specific prior written permission.
+  20:/opt/local/avr/include/util/delay.h **** 
+  21:/opt/local/avr/include/util/delay.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  22:/opt/local/avr/include/util/delay.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  23:/opt/local/avr/include/util/delay.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  24:/opt/local/avr/include/util/delay.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  25:/opt/local/avr/include/util/delay.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  26:/opt/local/avr/include/util/delay.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  27:/opt/local/avr/include/util/delay.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  28:/opt/local/avr/include/util/delay.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  29:/opt/local/avr/include/util/delay.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  30:/opt/local/avr/include/util/delay.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  31:/opt/local/avr/include/util/delay.h ****   POSSIBILITY OF SUCH DAMAGE. */
+  32:/opt/local/avr/include/util/delay.h **** 
+  33:/opt/local/avr/include/util/delay.h **** /* $Id: delay.h.in 2506 2016-02-08 10:05:45Z joerg_wunsch $ */
+  34:/opt/local/avr/include/util/delay.h **** 
+  35:/opt/local/avr/include/util/delay.h **** #ifndef _UTIL_DELAY_H_
+  36:/opt/local/avr/include/util/delay.h **** #define _UTIL_DELAY_H_ 1
+  37:/opt/local/avr/include/util/delay.h **** 
+  38:/opt/local/avr/include/util/delay.h **** #ifndef __DOXYGEN__
+  39:/opt/local/avr/include/util/delay.h **** #  ifndef __HAS_DELAY_CYCLES
+  40:/opt/local/avr/include/util/delay.h **** #    define __HAS_DELAY_CYCLES 1
+  41:/opt/local/avr/include/util/delay.h **** #  endif
+  42:/opt/local/avr/include/util/delay.h **** #endif  /* __DOXYGEN__ */
+  43:/opt/local/avr/include/util/delay.h **** 
+  44:/opt/local/avr/include/util/delay.h **** #include <inttypes.h>
+  45:/opt/local/avr/include/util/delay.h **** #include <util/delay_basic.h>
+  46:/opt/local/avr/include/util/delay.h **** #include <math.h>
+  47:/opt/local/avr/include/util/delay.h **** 
+  48:/opt/local/avr/include/util/delay.h **** /** \file */
+  49:/opt/local/avr/include/util/delay.h **** /** \defgroup util_delay <util/delay.h>: Convenience functions for busy-wait delay loops
+  50:/opt/local/avr/include/util/delay.h ****     \code
+  51:/opt/local/avr/include/util/delay.h ****     #define F_CPU 1000000UL  // 1 MHz
+  52:/opt/local/avr/include/util/delay.h ****     //#define F_CPU 14.7456E6
+  53:/opt/local/avr/include/util/delay.h ****     #include <util/delay.h>
+  54:/opt/local/avr/include/util/delay.h ****     \endcode
+  55:/opt/local/avr/include/util/delay.h **** 
+  56:/opt/local/avr/include/util/delay.h ****     \note As an alternative method, it is possible to pass the
+  57:/opt/local/avr/include/util/delay.h ****     F_CPU macro down to the compiler from the Makefile.
+  58:/opt/local/avr/include/util/delay.h ****     Obviously, in that case, no \c \#define statement should be
+  59:/opt/local/avr/include/util/delay.h ****     used.
+  60:/opt/local/avr/include/util/delay.h **** 
+  61:/opt/local/avr/include/util/delay.h ****     The functions in this header file are wrappers around the basic
+  62:/opt/local/avr/include/util/delay.h ****     busy-wait functions from <util/delay_basic.h>.  They are meant as
+  63:/opt/local/avr/include/util/delay.h ****     convenience functions where actual time values can be specified
+  64:/opt/local/avr/include/util/delay.h ****     rather than a number of cycles to wait for.  The idea behind is
+  65:/opt/local/avr/include/util/delay.h ****     that compile-time constant expressions will be eliminated by
+  66:/opt/local/avr/include/util/delay.h ****     compiler optimization so floating-point expressions can be used
+  67:/opt/local/avr/include/util/delay.h ****     to calculate the number of delay cycles needed based on the CPU
+  68:/opt/local/avr/include/util/delay.h ****     frequency passed by the macro F_CPU.
+  69:/opt/local/avr/include/util/delay.h **** 
+  70:/opt/local/avr/include/util/delay.h ****     \note In order for these functions to work as intended, compiler
+  71:/opt/local/avr/include/util/delay.h ****     optimizations <em>must</em> be enabled, and the delay time
+  72:/opt/local/avr/include/util/delay.h ****     <em>must</em> be an expression that is a known constant at
+  73:/opt/local/avr/include/util/delay.h ****     compile-time.  If these requirements are not met, the resulting
+  74:/opt/local/avr/include/util/delay.h ****     delay will be much longer (and basically unpredictable), and
+  75:/opt/local/avr/include/util/delay.h ****     applications that otherwise do not use floating-point calculations
+  76:/opt/local/avr/include/util/delay.h ****     will experience severe code bloat by the floating-point library
+  77:/opt/local/avr/include/util/delay.h ****     routines linked into the application.
+  78:/opt/local/avr/include/util/delay.h **** 
+  79:/opt/local/avr/include/util/delay.h ****     The functions available allow the specification of microsecond, and
+  80:/opt/local/avr/include/util/delay.h ****     millisecond delays directly, using the application-supplied macro
+  81:/opt/local/avr/include/util/delay.h ****     F_CPU as the CPU clock frequency (in Hertz).
+  82:/opt/local/avr/include/util/delay.h **** 
+  83:/opt/local/avr/include/util/delay.h **** */
+  84:/opt/local/avr/include/util/delay.h **** 
+  85:/opt/local/avr/include/util/delay.h **** #if !defined(__DOXYGEN__)
+  86:/opt/local/avr/include/util/delay.h **** static __inline__ void _delay_us(double __us) __attribute__((__always_inline__));
+  87:/opt/local/avr/include/util/delay.h **** static __inline__ void _delay_ms(double __ms) __attribute__((__always_inline__));
+  88:/opt/local/avr/include/util/delay.h **** #endif
+  89:/opt/local/avr/include/util/delay.h **** 
+  90:/opt/local/avr/include/util/delay.h **** #ifndef F_CPU
+  91:/opt/local/avr/include/util/delay.h **** /* prevent compiler error by supplying a default */
+  92:/opt/local/avr/include/util/delay.h **** # warning "F_CPU not defined for <util/delay.h>"
+  93:/opt/local/avr/include/util/delay.h **** /** \ingroup util_delay
+  94:/opt/local/avr/include/util/delay.h ****     \def F_CPU
+  95:/opt/local/avr/include/util/delay.h ****     \brief CPU frequency in Hz
+  96:/opt/local/avr/include/util/delay.h **** 
+  97:/opt/local/avr/include/util/delay.h ****     The macro F_CPU specifies the CPU frequency to be considered by
+  98:/opt/local/avr/include/util/delay.h ****     the delay macros.  This macro is normally supplied by the
+  99:/opt/local/avr/include/util/delay.h ****     environment (e.g. from within a project header, or the project's
+ 100:/opt/local/avr/include/util/delay.h ****     Makefile).  The value 1 MHz here is only provided as a "vanilla"
+ 101:/opt/local/avr/include/util/delay.h ****     fallback if no such user-provided definition could be found.
+ 102:/opt/local/avr/include/util/delay.h **** 
+ 103:/opt/local/avr/include/util/delay.h ****     In terms of the delay functions, the CPU frequency can be given as
+ 104:/opt/local/avr/include/util/delay.h ****     a floating-point constant (e.g. 3.6864E6 for 3.6864 MHz).
+ 105:/opt/local/avr/include/util/delay.h ****     However, the macros in <util/setbaud.h> require it to be an
+ 106:/opt/local/avr/include/util/delay.h ****     integer value.
+ 107:/opt/local/avr/include/util/delay.h ****  */
+ 108:/opt/local/avr/include/util/delay.h **** # define F_CPU 1000000UL
+ 109:/opt/local/avr/include/util/delay.h **** #endif
+ 110:/opt/local/avr/include/util/delay.h **** 
+ 111:/opt/local/avr/include/util/delay.h **** #ifndef __OPTIMIZE__
+ 112:/opt/local/avr/include/util/delay.h **** # warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+ 113:/opt/local/avr/include/util/delay.h **** #endif
+ 114:/opt/local/avr/include/util/delay.h **** 
+ 115:/opt/local/avr/include/util/delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 116:/opt/local/avr/include/util/delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 117:/opt/local/avr/include/util/delay.h ****   __STDC_HOSTED__
+ 118:/opt/local/avr/include/util/delay.h **** #  include <math.h>
+ 119:/opt/local/avr/include/util/delay.h **** #endif
+ 120:/opt/local/avr/include/util/delay.h **** 
+ 121:/opt/local/avr/include/util/delay.h **** /**
+ 122:/opt/local/avr/include/util/delay.h ****    \ingroup util_delay
+ 123:/opt/local/avr/include/util/delay.h **** 
+ 124:/opt/local/avr/include/util/delay.h ****    Perform a delay of \c __ms milliseconds, using _delay_loop_2().
+ 125:/opt/local/avr/include/util/delay.h **** 
+ 126:/opt/local/avr/include/util/delay.h ****    The macro F_CPU is supposed to be defined to a
+ 127:/opt/local/avr/include/util/delay.h ****    constant defining the CPU clock frequency (in Hertz).
+ 128:/opt/local/avr/include/util/delay.h **** 
+ 129:/opt/local/avr/include/util/delay.h ****    The maximal possible delay is 262.14 ms / F_CPU in MHz.
+ 130:/opt/local/avr/include/util/delay.h **** 
+ 131:/opt/local/avr/include/util/delay.h ****    When the user request delay which exceed the maximum possible one,
+ 132:/opt/local/avr/include/util/delay.h ****    _delay_ms() provides a decreased resolution functionality. In this
+ 133:/opt/local/avr/include/util/delay.h ****    mode _delay_ms() will work with a resolution of 1/10 ms, providing
+ 134:/opt/local/avr/include/util/delay.h ****    delays up to 6.5535 seconds (independent from CPU frequency).  The
+ 135:/opt/local/avr/include/util/delay.h ****    user will not be informed about decreased resolution.
+ 136:/opt/local/avr/include/util/delay.h **** 
+ 137:/opt/local/avr/include/util/delay.h ****    If the avr-gcc toolchain has __builtin_avr_delay_cycles()
+ 138:/opt/local/avr/include/util/delay.h ****    support, maximal possible delay is 4294967.295 ms/ F_CPU in MHz. For
+ 139:/opt/local/avr/include/util/delay.h ****    values greater than the maximal possible delay, overflows results in
+ 140:/opt/local/avr/include/util/delay.h ****    no delay i.e., 0ms.
+ 141:/opt/local/avr/include/util/delay.h **** 
+ 142:/opt/local/avr/include/util/delay.h ****    Conversion of \c __ms into clock cycles may not always result in
+ 143:/opt/local/avr/include/util/delay.h ****    integer.  By default, the clock cycles rounded up to next
+ 144:/opt/local/avr/include/util/delay.h ****    integer. This ensures that the user gets at least \c __ms
+ 145:/opt/local/avr/include/util/delay.h ****    microseconds of delay.
+ 146:/opt/local/avr/include/util/delay.h **** 
+ 147:/opt/local/avr/include/util/delay.h ****    Alternatively, by defining the macro \c __DELAY_ROUND_DOWN__, or
+ 148:/opt/local/avr/include/util/delay.h ****    \c __DELAY_ROUND_CLOSEST__, before including this header file, the
+ 149:/opt/local/avr/include/util/delay.h ****    algorithm can be made to round down, or round to closest integer,
+ 150:/opt/local/avr/include/util/delay.h ****    respectively.
+ 151:/opt/local/avr/include/util/delay.h **** 
+ 152:/opt/local/avr/include/util/delay.h ****    \note
+ 153:/opt/local/avr/include/util/delay.h **** 
+ 154:/opt/local/avr/include/util/delay.h ****    The implementation of _delay_ms() based on
+ 155:/opt/local/avr/include/util/delay.h ****    __builtin_avr_delay_cycles() is not backward compatible with older
+ 156:/opt/local/avr/include/util/delay.h ****    implementations.  In order to get functionality backward compatible
+ 157:/opt/local/avr/include/util/delay.h ****    with previous versions, the macro \c "__DELAY_BACKWARD_COMPATIBLE__"
+ 158:/opt/local/avr/include/util/delay.h ****    must be defined before including this header file. Also, the
+ 159:/opt/local/avr/include/util/delay.h ****    backward compatible algorithm will be chosen if the code is
+ 160:/opt/local/avr/include/util/delay.h ****    compiled in a <em>freestanding environment</em> (GCC option
+ 161:/opt/local/avr/include/util/delay.h ****    \c -ffreestanding), as the math functions required for rounding are
+ 162:/opt/local/avr/include/util/delay.h ****    not available to the compiler then.
+ 163:/opt/local/avr/include/util/delay.h **** 
+ 164:/opt/local/avr/include/util/delay.h ****  */
+ 165:/opt/local/avr/include/util/delay.h **** void
+ 166:/opt/local/avr/include/util/delay.h **** _delay_ms(double __ms)
+ 167:/opt/local/avr/include/util/delay.h **** {
+ 168:/opt/local/avr/include/util/delay.h **** 	double __tmp ;
+ 169:/opt/local/avr/include/util/delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 170:/opt/local/avr/include/util/delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 171:/opt/local/avr/include/util/delay.h ****   __STDC_HOSTED__
+ 172:/opt/local/avr/include/util/delay.h **** 	uint32_t __ticks_dc;
+ 173:/opt/local/avr/include/util/delay.h **** 	extern void __builtin_avr_delay_cycles(unsigned long);
+ 174:/opt/local/avr/include/util/delay.h **** 	__tmp = ((F_CPU) / 1e3) * __ms;
+ 175:/opt/local/avr/include/util/delay.h **** 
+ 176:/opt/local/avr/include/util/delay.h **** 	#if defined(__DELAY_ROUND_DOWN__)
+ 177:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)fabs(__tmp);
+ 178:/opt/local/avr/include/util/delay.h **** 
+ 179:/opt/local/avr/include/util/delay.h **** 	#elif defined(__DELAY_ROUND_CLOSEST__)
+ 180:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+ 181:/opt/local/avr/include/util/delay.h **** 
+ 182:/opt/local/avr/include/util/delay.h **** 	#else
+ 183:/opt/local/avr/include/util/delay.h **** 		//round up by default
+ 184:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+ 185:/opt/local/avr/include/util/delay.h **** 	#endif
+ 186:/opt/local/avr/include/util/delay.h **** 
+ 187:/opt/local/avr/include/util/delay.h **** 	__builtin_avr_delay_cycles(__ticks_dc);
+ 188:/opt/local/avr/include/util/delay.h **** 
+ 189:/opt/local/avr/include/util/delay.h **** #else
+ 190:/opt/local/avr/include/util/delay.h **** 	uint16_t __ticks;
+ 191:/opt/local/avr/include/util/delay.h **** 	__tmp = ((F_CPU) / 4e3) * __ms;
+ 192:/opt/local/avr/include/util/delay.h **** 	if (__tmp < 1.0)
+ 193:/opt/local/avr/include/util/delay.h **** 		__ticks = 1;
+ 194:/opt/local/avr/include/util/delay.h **** 	else if (__tmp > 65535)
+ 195:/opt/local/avr/include/util/delay.h **** 	{
+ 196:/opt/local/avr/include/util/delay.h **** 		//	__ticks = requested delay in 1/10 ms
+ 197:/opt/local/avr/include/util/delay.h **** 		__ticks = (uint16_t) (__ms * 10.0);
+ 198:/opt/local/avr/include/util/delay.h **** 		while(__ticks)
+ 199:/opt/local/avr/include/util/delay.h **** 		{
+ 200:/opt/local/avr/include/util/delay.h **** 			// wait 1/10 ms
+ 201:/opt/local/avr/include/util/delay.h **** 			_delay_loop_2(((F_CPU) / 4e3) / 10);
+ 202:/opt/local/avr/include/util/delay.h **** 			__ticks --;
+ 203:/opt/local/avr/include/util/delay.h **** 		}
+ 204:/opt/local/avr/include/util/delay.h **** 		return;
+ 205:/opt/local/avr/include/util/delay.h **** 	}
+ 206:/opt/local/avr/include/util/delay.h **** 	else
+ 207:/opt/local/avr/include/util/delay.h **** 		__ticks = (uint16_t)__tmp;
+ 208:/opt/local/avr/include/util/delay.h **** 	_delay_loop_2(__ticks);
+ 209:/opt/local/avr/include/util/delay.h **** #endif
+ 210:/opt/local/avr/include/util/delay.h **** }
+ 211:/opt/local/avr/include/util/delay.h **** 
+ 212:/opt/local/avr/include/util/delay.h **** /**
+ 213:/opt/local/avr/include/util/delay.h ****    \ingroup util_delay
+ 214:/opt/local/avr/include/util/delay.h **** 
+ 215:/opt/local/avr/include/util/delay.h ****    Perform a delay of \c __us microseconds, using _delay_loop_1().
+ 216:/opt/local/avr/include/util/delay.h **** 
+ 217:/opt/local/avr/include/util/delay.h ****    The macro F_CPU is supposed to be defined to a
+ 218:/opt/local/avr/include/util/delay.h ****    constant defining the CPU clock frequency (in Hertz).
+ 219:/opt/local/avr/include/util/delay.h **** 
+ 220:/opt/local/avr/include/util/delay.h ****    The maximal possible delay is 768 us / F_CPU in MHz.
+ 221:/opt/local/avr/include/util/delay.h **** 
+ 222:/opt/local/avr/include/util/delay.h ****    If the user requests a delay greater than the maximal possible one,
+ 223:/opt/local/avr/include/util/delay.h ****    _delay_us() will automatically call _delay_ms() instead.  The user
+ 224:/opt/local/avr/include/util/delay.h ****    will not be informed about this case.
+ 225:/opt/local/avr/include/util/delay.h **** 
+ 226:/opt/local/avr/include/util/delay.h ****    If the avr-gcc toolchain has __builtin_avr_delay_cycles()
+ 227:/opt/local/avr/include/util/delay.h ****    support, maximal possible delay is 4294967.295 us/ F_CPU in MHz. For
+ 228:/opt/local/avr/include/util/delay.h ****    values greater than the maximal possible delay, overflow results in
+ 229:/opt/local/avr/include/util/delay.h ****    no delay i.e., 0us.
+ 230:/opt/local/avr/include/util/delay.h **** 
+ 231:/opt/local/avr/include/util/delay.h ****    Conversion of \c __us into clock cycles may not always result in
+ 232:/opt/local/avr/include/util/delay.h ****    integer.  By default, the clock cycles rounded up to next
+ 233:/opt/local/avr/include/util/delay.h ****    integer. This ensures that the user gets at least \c __us
+ 234:/opt/local/avr/include/util/delay.h ****    microseconds of delay.
+ 235:/opt/local/avr/include/util/delay.h **** 
+ 236:/opt/local/avr/include/util/delay.h ****    Alternatively, by defining the macro \c __DELAY_ROUND_DOWN__, or
+ 237:/opt/local/avr/include/util/delay.h ****    \c __DELAY_ROUND_CLOSEST__, before including this header file, the
+ 238:/opt/local/avr/include/util/delay.h ****    algorithm can be made to round down, or round to closest integer,
+ 239:/opt/local/avr/include/util/delay.h ****    respectively.
+ 240:/opt/local/avr/include/util/delay.h **** 
+ 241:/opt/local/avr/include/util/delay.h ****    \note
+ 242:/opt/local/avr/include/util/delay.h **** 
+ 243:/opt/local/avr/include/util/delay.h ****    The implementation of _delay_ms() based on
+ 244:/opt/local/avr/include/util/delay.h ****    __builtin_avr_delay_cycles() is not backward compatible with older
+ 245:/opt/local/avr/include/util/delay.h ****    implementations.  In order to get functionality backward compatible
+ 246:/opt/local/avr/include/util/delay.h ****    with previous versions, the macro \c __DELAY_BACKWARD_COMPATIBLE__
+ 247:/opt/local/avr/include/util/delay.h ****    must be defined before including this header file. Also, the
+ 248:/opt/local/avr/include/util/delay.h ****    backward compatible algorithm will be chosen if the code is
+ 249:/opt/local/avr/include/util/delay.h ****    compiled in a <em>freestanding environment</em> (GCC option
+ 250:/opt/local/avr/include/util/delay.h ****    \c -ffreestanding), as the math functions required for rounding are
+ 251:/opt/local/avr/include/util/delay.h ****    not available to the compiler then.
+ 252:/opt/local/avr/include/util/delay.h **** 
+ 253:/opt/local/avr/include/util/delay.h ****  */
+ 254:/opt/local/avr/include/util/delay.h **** void
+ 255:/opt/local/avr/include/util/delay.h **** _delay_us(double __us)
+ 256:/opt/local/avr/include/util/delay.h **** {
+ 257:/opt/local/avr/include/util/delay.h **** 	double __tmp ;
+ 258:/opt/local/avr/include/util/delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 259:/opt/local/avr/include/util/delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 260:/opt/local/avr/include/util/delay.h ****   __STDC_HOSTED__
+ 261:/opt/local/avr/include/util/delay.h **** 	uint32_t __ticks_dc;
+ 262:/opt/local/avr/include/util/delay.h **** 	extern void __builtin_avr_delay_cycles(unsigned long);
+ 263:/opt/local/avr/include/util/delay.h **** 	__tmp = ((F_CPU) / 1e6) * __us;
+ 264:/opt/local/avr/include/util/delay.h **** 
+ 265:/opt/local/avr/include/util/delay.h **** 	#if defined(__DELAY_ROUND_DOWN__)
+ 266:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)fabs(__tmp);
+ 267:/opt/local/avr/include/util/delay.h **** 
+ 268:/opt/local/avr/include/util/delay.h **** 	#elif defined(__DELAY_ROUND_CLOSEST__)
+ 269:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+ 270:/opt/local/avr/include/util/delay.h **** 
+ 271:/opt/local/avr/include/util/delay.h **** 	#else
+ 272:/opt/local/avr/include/util/delay.h **** 		//round up by default
+ 273:/opt/local/avr/include/util/delay.h **** 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+ 274:/opt/local/avr/include/util/delay.h **** 	#endif
+ 275:/opt/local/avr/include/util/delay.h **** 
+ 276:/opt/local/avr/include/util/delay.h **** 	__builtin_avr_delay_cycles(__ticks_dc);
+ 117               		.loc 3 276 0 discriminator 3
+ 118 001a 85E0      		ldi r24,lo8(5)
+ 119 001c 8A95      	1:	dec r24
+ 120 001e 01F4      		brne 1b
+ 121 0020 0000      		nop
+ 122               	.LVL11:
+ 123               	.LBE28:
+ 124               	.LBE27:
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 125               		.loc 2 101 0 discriminator 3
+ 126 0022 2197      		sbiw r28,1
+ 127               	.LVL12:
+ 128 0024 00C0      		rjmp .L5
+ 129               		.cfi_endproc
+ 130               	.LFE11:
+ 132               		.section	.text.wait_clock_hi.constprop.2,"ax",@progbits
+ 134               	wait_clock_hi.constprop.2:
+ 135               	.LFB23:
+ 104:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline uint16_t wait_clock_hi(uint16_t us)
+ 136               		.loc 2 104 0
+ 137               		.cfi_startproc
+ 138 0000 CF93      		push r28
+ 139               	.LCFI2:
+ 140               		.cfi_def_cfa_offset 3
+ 141               		.cfi_offset 28, -2
+ 142 0002 DF93      		push r29
+ 143               	.LCFI3:
+ 144               		.cfi_def_cfa_offset 4
+ 145               		.cfi_offset 29, -3
+ 146               	/* prologue: function */
+ 147               	/* frame size = 0 */
+ 148               	/* stack size = 2 */
+ 149               	.L__stack_usage = 2
+ 150               	.LVL13:
+ 151               		.loc 2 104 0
+ 152 0004 C2E3      		ldi r28,lo8(50)
+ 153 0006 D0E0      		ldi r29,0
+ 154               	.LVL14:
+ 155               	.L12:
+ 105:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+ 106:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     while (!clock_in() && us) { asm(""); wait_us(1); us--; }
+ 156               		.loc 2 106 0
+ 157 0008 0E94 0000 		call clock_in
+ 158               	.LVL15:
+ 159 000c 8111      		cpse r24,__zero_reg__
+ 160 000e 00C0      		rjmp .L11
+ 161 0010 2097      		sbiw r28,0
+ 162 0012 01F4      		brne .L14
+ 163               	.L11:
+ 107:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 108:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 164               		.loc 2 108 0
+ 165 0014 CE01      		movw r24,r28
+ 166               	/* epilogue start */
+ 167 0016 DF91      		pop r29
+ 168 0018 CF91      		pop r28
+ 169               	.LVL16:
+ 170 001a 0895      		ret
+ 171               	.LVL17:
+ 172               	.L14:
+ 106:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 173               		.loc 2 106 0
+ 174               	.LVL18:
+ 175               	.LBB29:
+ 176               	.LBB30:
+ 177               		.loc 3 276 0
+ 178 001c 85E0      		ldi r24,lo8(5)
+ 179 001e 8A95      	1:	dec r24
+ 180 0020 01F4      		brne 1b
+ 181 0022 0000      		nop
+ 182               	.LVL19:
+ 183               	.LBE30:
+ 184               	.LBE29:
+ 106:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 185               		.loc 2 106 0
+ 186 0024 2197      		sbiw r28,1
+ 187               	.LVL20:
+ 188 0026 00C0      		rjmp .L12
+ 189               		.cfi_endproc
+ 190               	.LFE23:
+ 192               		.section	.text.ps2_host_init,"ax",@progbits
+ 193               	.global	ps2_host_init
+ 195               	ps2_host_init:
+ 196               	.LFB17:
+ 197               		.file 4 "/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c"
+   1:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** /*
+   2:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** Copyright 2010,2011,2012,2013 Jun WAKO <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+   4:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** This software is licensed with a Modified BSD License.
+   5:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** All of this is supposed to be Free Software, Open Source, DFSG-free,
+   6:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** GPL-compatible, and OK to use in both free and proprietary applications.
+   7:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** Additions and corrections to this file are welcome.
+   8:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+   9:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  10:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** Redistribution and use in source and binary forms, with or without
+  11:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** modification, are permitted provided that the following conditions are met:
+  12:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  13:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** * Redistributions of source code must retain the above copyright
+  14:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   notice, this list of conditions and the following disclaimer.
+  15:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  16:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** * Redistributions in binary form must reproduce the above copyright
+  17:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   notice, this list of conditions and the following disclaimer in
+  18:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   the documentation and/or other materials provided with the
+  19:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   distribution.
+  20:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  21:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** * Neither the name of the copyright holders nor the names of
+  22:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   contributors may be used to endorse or promote products derived
+  23:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****   from this software without specific prior written permission.
+  24:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  25:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  26:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  27:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  28:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  29:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  30:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  31:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  32:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  33:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  34:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  35:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** POSSIBILITY OF SUCH DAMAGE.
+  36:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** */
+  37:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  38:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** /*
+  39:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****  * PS/2 protocol Pin interrupt version
+  40:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****  */
+  41:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  42:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include <stdbool.h>
+  43:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include <avr/interrupt.h>
+  44:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include <util/delay.h>
+  45:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include "pbuff.h"
+  46:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include "ps2.h"
+  47:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include "ps2_io.h"
+  48:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #include "print.h"
+  49:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  50:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  51:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** #define WAIT(stat, us, err) do { \
+  52:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     if (!wait_##stat(us)) { \
+  53:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         ps2_error = err; \
+  54:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         goto ERROR; \
+  55:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     } \
+  56:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** } while (0)
+  57:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  58:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  59:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** uint8_t ps2_error = PS2_ERR_NONE;
+  60:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  61:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** void ps2_host_init(void)
+  62:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+ 198               		.loc 4 62 0
+ 199               		.cfi_startproc
+ 200               	/* prologue: function */
+ 201               	/* frame size = 0 */
+ 202               	/* stack size = 0 */
+ 203               	.L__stack_usage = 0
+ 204               	.LBB33:
+ 205               	.LBB34:
+ 109:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline uint16_t wait_data_lo(uint16_t us)
+ 110:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     while (data_in() && us)  { asm(""); wait_us(1); us--; }
+ 112:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 113:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 114:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline uint16_t wait_data_hi(uint16_t us)
+ 115:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+ 116:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     while (!data_in() && us)  { asm(""); wait_us(1); us--; }
+ 117:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 118:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 119:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+ 120:/users/hunter/downloads/tmk_core/protocol/ps2.h **** /* idle state that device can send */
+ 121:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline void idle(void)
+ 122:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+ 123:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     clock_hi();
+ 206               		.loc 2 123 0
+ 207 0000 0E94 0000 		call clock_hi
+ 208               	.LVL21:
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     data_hi();
+ 209               		.loc 2 124 0
+ 210 0004 0E94 0000 		call data_hi
+ 211               	.LVL22:
+ 212               	.LBE34:
+ 213               	.LBE33:
+  63:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     idle();
+  64:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     PS2_INT_INIT();
+ 214               		.loc 4 64 0
+ 215 0008 E9E6      		ldi r30,lo8(105)
+ 216 000a F0E0      		ldi r31,0
+ 217 000c 8081      		ld r24,Z
+ 218 000e 8860      		ori r24,lo8(8)
+ 219 0010 8083      		st Z,r24
+  65:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     PS2_INT_ON();
+ 220               		.loc 4 65 0
+ 221 0012 E99A      		sbi 0x1d,1
+ 222               	/* epilogue start */
+  66:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     // POR(150-2000ms) plus BAT(300-500ms) may take 2.5sec([3]p.20)
+  67:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     //_delay_ms(2500);
+  68:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 223               		.loc 4 68 0
+ 224 0014 0895      		ret
+ 225               		.cfi_endproc
+ 226               	.LFE17:
+ 228               		.section	.text.ps2_host_recv_response,"ax",@progbits
+ 229               	.global	ps2_host_recv_response
+ 231               	ps2_host_recv_response:
+ 232               	.LFB19:
+  69:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  70:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** uint8_t ps2_host_send(uint8_t data)
+  71:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+  72:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     bool parity = true;
+  73:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_error = PS2_ERR_NONE;
+  74:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  75:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     PS2_INT_OFF();
+  76:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  77:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* terminate a transmission if we have */
+  78:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     inhibit();
+  79:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     _delay_us(100); // 100us [4]p.13, [5]p.50
+  80:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  81:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* 'Request to Send' and Start bit */
+  82:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     data_lo();
+  83:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     clock_hi();
+  84:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 10000, 10);   // 10ms [5]p.50
+  85:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  86:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* Data bit[2-9] */
+  87:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     for (uint8_t i = 0; i < 8; i++) {
+  88:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         _delay_us(15);
+  89:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         if (data&(1<<i)) {
+  90:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             parity = !parity;
+  91:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             data_hi();
+  92:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         } else {
+  93:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             data_lo();
+  94:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         }
+  95:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         WAIT(clock_hi, 50, 2);
+  96:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         WAIT(clock_lo, 50, 3);
+  97:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+  98:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+  99:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* Parity bit */
+ 100:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     _delay_us(15);
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     if (parity) { data_hi(); } else { data_lo(); }
+ 102:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_hi, 50, 4);
+ 103:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 5);
+ 104:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 105:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* Stop bit */
+ 106:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     _delay_us(15);
+ 107:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     data_hi();
+ 108:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 109:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* Ack */
+ 110:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(data_lo, 50, 6);
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 7);
+ 112:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 113:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     /* wait for idle state */
+ 114:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_hi, 50, 8);
+ 115:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(data_hi, 50, 9);
+ 116:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 117:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     idle();
+ 118:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     PS2_INT_ON();
+ 119:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return ps2_host_recv_response();
+ 120:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ERROR:
+ 121:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     idle();
+ 122:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     PS2_INT_ON();
+ 123:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return 0;
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 125:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 126:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** uint8_t ps2_host_recv_response(void)
+ 127:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+ 233               		.loc 4 127 0
+ 234               		.cfi_startproc
+ 235               	/* prologue: function */
+ 236               	/* frame size = 0 */
+ 237               	/* stack size = 0 */
+ 238               	.L__stack_usage = 0
+ 239               	.LVL23:
+ 128:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     // Command may take 25ms/20ms at most([5]p.46, [3]p.21)
+ 129:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     uint8_t retry = 25;
+ 130:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     while (retry-- && !pbuf_has_data()) {
+ 240               		.loc 4 130 0
+ 241 0000 8AE1      		ldi r24,lo8(26)
+ 242               	.LVL24:
+ 243               	.L17:
+ 244 0002 8150      		subi r24,lo8(-(-1))
+ 245               	.LVL25:
+ 246 0004 01F4      		brne .L18
+ 247               	.LVL26:
+ 248               	.L19:
+ 131:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         _delay_ms(1);
+ 132:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 133:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return pbuf_dequeue();
+ 249               		.loc 4 133 0
+ 250 0006 0E94 0000 		call pbuf_dequeue
+ 251               	.LVL27:
+ 252               	/* epilogue start */
+ 134:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 253               		.loc 4 134 0
+ 254 000a 0895      		ret
+ 255               	.LVL28:
+ 256               	.L18:
+ 257               	.LBB39:
+ 258               	.LBB40:
+  41:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** static inline bool pbuf_has_data(void)
+  42:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** {
+  43:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint8_t sreg = SREG;
+ 259               		.loc 1 43 0
+ 260 000c 9FB7      		in r25,__SREG__
+ 261               	.LVL29:
+  44:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     cli();
+ 262               		.loc 1 44 0
+ 263               	/* #APP */
+ 264               	 ;  44 "/users/hunter/downloads/tmk_core/protocol/pbuff.h" 1
+ 265 000e F894      		cli
+ 266               	 ;  0 "" 2
+  45:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     bool has_data = (pbuf_head != pbuf_tail);
+ 267               		.loc 1 45 0
+ 268               	/* #NOAPP */
+ 269 0010 4091 0000 		lds r20,pbuf_head
+ 270 0014 5091 0000 		lds r21,pbuf_head+1
+ 271 0018 2091 0000 		lds r18,pbuf_tail
+ 272 001c 3091 0000 		lds r19,pbuf_tail+1
+ 273               	.LVL30:
+  46:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     SREG = sreg;
+ 274               		.loc 1 46 0
+ 275 0020 9FBF      		out __SREG__,r25
+ 276               	.LVL31:
+ 277               	.LBE40:
+ 278               	.LBE39:
+ 130:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         _delay_ms(1);
+ 279               		.loc 4 130 0
+ 280 0022 4217      		cp r20,r18
+ 281 0024 5307      		cpc r21,r19
+ 282 0026 01F4      		brne .L19
+ 283               	.LVL32:
+ 284               	.LBB41:
+ 285               	.LBB42:
+ 187:/opt/local/avr/include/util/delay.h **** 
+ 286               		.loc 3 187 0
+ 287 0028 EFE9      		ldi r30,lo8(3999)
+ 288 002a FFE0      		ldi r31,hi8(3999)
+ 289 002c 3197      	1:	sbiw r30,1
+ 290 002e 01F4      		brne 1b
+ 291 0030 00C0      		rjmp .
+ 292 0032 0000      		nop
+ 293 0034 00C0      		rjmp .L17
+ 294               	.LBE42:
+ 295               	.LBE41:
+ 296               		.cfi_endproc
+ 297               	.LFE19:
+ 299               		.section	.text.ps2_host_send,"ax",@progbits
+ 300               	.global	ps2_host_send
+ 302               	ps2_host_send:
+ 303               	.LFB18:
+  71:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     bool parity = true;
+ 304               		.loc 4 71 0
+ 305               		.cfi_startproc
+ 306               	.LVL33:
+ 307 0000 EF92      		push r14
+ 308               	.LCFI4:
+ 309               		.cfi_def_cfa_offset 3
+ 310               		.cfi_offset 14, -2
+ 311 0002 FF92      		push r15
+ 312               	.LCFI5:
+ 313               		.cfi_def_cfa_offset 4
+ 314               		.cfi_offset 15, -3
+ 315 0004 0F93      		push r16
+ 316               	.LCFI6:
+ 317               		.cfi_def_cfa_offset 5
+ 318               		.cfi_offset 16, -4
+ 319 0006 1F93      		push r17
+ 320               	.LCFI7:
+ 321               		.cfi_def_cfa_offset 6
+ 322               		.cfi_offset 17, -5
+ 323 0008 CF93      		push r28
+ 324               	.LCFI8:
+ 325               		.cfi_def_cfa_offset 7
+ 326               		.cfi_offset 28, -6
+ 327 000a DF93      		push r29
+ 328               	.LCFI9:
+ 329               		.cfi_def_cfa_offset 8
+ 330               		.cfi_offset 29, -7
+ 331               	/* prologue: function */
+ 332               	/* frame size = 0 */
+ 333               	/* stack size = 6 */
+ 334               	.L__stack_usage = 6
+ 335 000c E82E      		mov r14,r24
+ 336               	.LVL34:
+  73:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 337               		.loc 4 73 0
+ 338 000e 1092 0000 		sts ps2_error,__zero_reg__
+  75:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 339               		.loc 4 75 0
+ 340 0012 E998      		cbi 0x1d,1
+ 341               	.LBB66:
+ 342               	.LBB67:
+ 125:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 126:/users/hunter/downloads/tmk_core/protocol/ps2.h **** 
+ 127:/users/hunter/downloads/tmk_core/protocol/ps2.h **** /* inhibit device to send */
+ 128:/users/hunter/downloads/tmk_core/protocol/ps2.h **** static inline void inhibit(void)
+ 129:/users/hunter/downloads/tmk_core/protocol/ps2.h **** {
+ 130:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     clock_lo();
+ 343               		.loc 2 130 0
+ 344 0014 0E94 0000 		call clock_lo
+ 345               	.LVL35:
+ 131:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     data_hi();
+ 346               		.loc 2 131 0
+ 347 0018 0E94 0000 		call data_hi
+ 348               	.LVL36:
+ 349               	.LBE67:
+ 350               	.LBE66:
+ 351               	.LBB68:
+ 352               	.LBB69:
+ 353               		.loc 3 276 0
+ 354 001c 8FE8      		ldi r24,lo8(399)
+ 355 001e 91E0      		ldi r25,hi8(399)
+ 356 0020 0197      	1:	sbiw r24,1
+ 357 0022 01F4      		brne 1b
+ 358 0024 00C0      		rjmp .
+ 359 0026 0000      		nop
+ 360               	.LVL37:
+ 361               	.LBE69:
+ 362               	.LBE68:
+  82:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     clock_hi();
+ 363               		.loc 4 82 0
+ 364 0028 0E94 0000 		call data_lo
+ 365               	.LVL38:
+  83:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 10000, 10);   // 10ms [5]p.50
+ 366               		.loc 4 83 0
+ 367 002c 0E94 0000 		call clock_hi
+ 368               	.LVL39:
+  84:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 369               		.loc 4 84 0
+ 370 0030 80E1      		ldi r24,lo8(16)
+ 371 0032 97E2      		ldi r25,lo8(39)
+ 372 0034 0E94 0000 		call wait_clock_lo
+ 373               	.LVL40:
+ 374 0038 892B      		or r24,r25
+ 375 003a 01F4      		brne .L45
+  84:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 376               		.loc 4 84 0 is_stmt 0 discriminator 1
+ 377 003c 8AE0      		ldi r24,lo8(10)
+ 378               	.LVL41:
+ 379               	.L48:
+ 115:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 380               		.loc 4 115 0 is_stmt 1 discriminator 1
+ 381 003e 8093 0000 		sts ps2_error,r24
+ 382               	.L25:
+ 383               	.LBB70:
+ 384               	.LBB71:
+ 123:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     data_hi();
+ 385               		.loc 2 123 0 discriminator 1
+ 386 0042 0E94 0000 		call clock_hi
+ 387               	.LVL42:
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 388               		.loc 2 124 0 discriminator 1
+ 389 0046 0E94 0000 		call data_hi
+ 390               	.LVL43:
+ 391               	.LBE71:
+ 392               	.LBE70:
+ 122:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return 0;
+ 393               		.loc 4 122 0 discriminator 1
+ 394 004a E99A      		sbi 0x1d,1
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 395               		.loc 4 124 0 discriminator 1
+ 396 004c 80E0      		ldi r24,0
+ 397               	/* epilogue start */
+ 398 004e DF91      		pop r29
+ 399 0050 CF91      		pop r28
+ 400 0052 1F91      		pop r17
+ 401 0054 0F91      		pop r16
+ 402 0056 FF90      		pop r15
+ 403 0058 EF90      		pop r14
+ 404               	.LVL44:
+ 405 005a 0895      		ret
+ 406               	.LVL45:
+ 407               	.L45:
+ 408 005c D0E0      		ldi r29,0
+ 409 005e C0E0      		ldi r28,0
+  72:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_error = PS2_ERR_NONE;
+ 410               		.loc 4 72 0
+ 411 0060 11E0      		ldi r17,lo8(1)
+ 412               	.LBB72:
+  89:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             parity = !parity;
+ 413               		.loc 4 89 0
+ 414 0062 F12C      		mov r15,__zero_reg__
+  90:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             data_hi();
+ 415               		.loc 4 90 0
+ 416 0064 01E0      		ldi r16,lo8(1)
+ 417               	.LVL46:
+ 418               	.L24:
+ 419               	.LBB73:
+ 420               	.LBB74:
+ 421               		.loc 3 276 0
+ 422 0066 90E5      		ldi r25,lo8(80)
+ 423 0068 9A95      	1:	dec r25
+ 424 006a 01F4      		brne 1b
+ 425               	.LVL47:
+ 426               	.LBE74:
+ 427               	.LBE73:
+  89:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             parity = !parity;
+ 428               		.loc 4 89 0
+ 429 006c C701      		movw r24,r14
+ 430 006e 0C2E      		mov r0,r28
+ 431 0070 00C0      		rjmp 2f
+ 432               		1:
+ 433 0072 9595      		asr r25
+ 434 0074 8795      		ror r24
+ 435               		2:
+ 436 0076 0A94      		dec r0
+ 437 0078 02F4      		brpl 1b
+ 438 007a 80FF      		sbrs r24,0
+ 439 007c 00C0      		rjmp .L26
+  90:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             data_hi();
+ 440               		.loc 4 90 0
+ 441 007e 1027      		eor r17,r16
+ 442               	.LVL48:
+  91:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         } else {
+ 443               		.loc 4 91 0
+ 444 0080 0E94 0000 		call data_hi
+ 445               	.LVL49:
+ 446               	.L27:
+  95:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         WAIT(clock_lo, 50, 3);
+ 447               		.loc 4 95 0
+ 448 0084 0E94 0000 		call wait_clock_hi.constprop.2
+ 449               	.LVL50:
+ 450 0088 892B      		or r24,r25
+ 451 008a 01F4      		brne .L28
+  95:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         WAIT(clock_lo, 50, 3);
+ 452               		.loc 4 95 0 is_stmt 0 discriminator 1
+ 453 008c 82E0      		ldi r24,lo8(2)
+ 454 008e 00C0      		rjmp .L48
+ 455               	.L26:
+  93:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         }
+ 456               		.loc 4 93 0 is_stmt 1
+ 457 0090 0E94 0000 		call data_lo
+ 458               	.LVL51:
+ 459 0094 00C0      		rjmp .L27
+ 460               	.L28:
+  96:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 461               		.loc 4 96 0
+ 462 0096 82E3      		ldi r24,lo8(50)
+ 463 0098 90E0      		ldi r25,0
+ 464 009a 0E94 0000 		call wait_clock_lo
+ 465               	.LVL52:
+ 466 009e 892B      		or r24,r25
+ 467 00a0 01F4      		brne .L29
+  96:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 468               		.loc 4 96 0 is_stmt 0 discriminator 1
+ 469 00a2 83E0      		ldi r24,lo8(3)
+ 470 00a4 00C0      		rjmp .L48
+ 471               	.L29:
+ 472               	.LVL53:
+ 473 00a6 2196      		adiw r28,1
+ 474               	.LVL54:
+  87:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         _delay_us(15);
+ 475               		.loc 4 87 0 is_stmt 1 discriminator 2
+ 476 00a8 C830      		cpi r28,8
+ 477 00aa D105      		cpc r29,__zero_reg__
+ 478 00ac 01F4      		brne .L24
+ 479               	.LVL55:
+ 480               	.LBE72:
+ 481               	.LBB75:
+ 482               	.LBB76:
+ 483               		.loc 3 276 0
+ 484 00ae 80E5      		ldi r24,lo8(80)
+ 485 00b0 8A95      	1:	dec r24
+ 486 00b2 01F4      		brne 1b
+ 487               	.LVL56:
+ 488               	.LBE76:
+ 489               	.LBE75:
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_hi, 50, 4);
+ 490               		.loc 4 101 0
+ 491 00b4 1123      		tst r17
+ 492 00b6 01F0      		breq .L30
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_hi, 50, 4);
+ 493               		.loc 4 101 0 is_stmt 0 discriminator 1
+ 494 00b8 0E94 0000 		call data_hi
+ 495               	.LVL57:
+ 496               	.L31:
+ 102:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 5);
+ 497               		.loc 4 102 0 is_stmt 1
+ 498 00bc 0E94 0000 		call wait_clock_hi.constprop.2
+ 499               	.LVL58:
+ 500 00c0 892B      		or r24,r25
+ 501 00c2 01F4      		brne .L32
+ 102:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 5);
+ 502               		.loc 4 102 0 is_stmt 0 discriminator 1
+ 503 00c4 84E0      		ldi r24,lo8(4)
+ 504 00c6 00C0      		rjmp .L48
+ 505               	.L30:
+ 101:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_hi, 50, 4);
+ 506               		.loc 4 101 0 is_stmt 1 discriminator 2
+ 507 00c8 0E94 0000 		call data_lo
+ 508               	.LVL59:
+ 509 00cc 00C0      		rjmp .L31
+ 510               	.L32:
+ 103:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 511               		.loc 4 103 0
+ 512 00ce 82E3      		ldi r24,lo8(50)
+ 513 00d0 90E0      		ldi r25,0
+ 514 00d2 0E94 0000 		call wait_clock_lo
+ 515               	.LVL60:
+ 516 00d6 892B      		or r24,r25
+ 517 00d8 01F4      		brne .L33
+ 103:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 518               		.loc 4 103 0 is_stmt 0 discriminator 1
+ 519 00da 85E0      		ldi r24,lo8(5)
+ 520 00dc 00C0      		rjmp .L48
+ 521               	.L33:
+ 522               	.LVL61:
+ 523               	.LBB77:
+ 524               	.LBB78:
+ 525               		.loc 3 276 0 is_stmt 1
+ 526 00de 90E5      		ldi r25,lo8(80)
+ 527 00e0 9A95      	1:	dec r25
+ 528 00e2 01F4      		brne 1b
+ 529               	.LVL62:
+ 530               	.LBE78:
+ 531               	.LBE77:
+ 107:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 532               		.loc 4 107 0
+ 533 00e4 0E94 0000 		call data_hi
+ 534               	.LVL63:
+ 535 00e8 C2E3      		ldi r28,lo8(50)
+ 536 00ea D0E0      		ldi r29,0
+ 537               	.LVL64:
+ 538               	.L34:
+ 539               	.LBB79:
+ 540               	.LBB80:
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 541               		.loc 2 111 0
+ 542 00ec 0E94 0000 		call data_in
+ 543               	.LVL65:
+ 544 00f0 8823      		tst r24
+ 545 00f2 01F0      		breq .L35
+ 546 00f4 2097      		sbiw r28,0
+ 547 00f6 01F4      		brne .L36
+ 548               	.LVL66:
+ 549               	.L37:
+ 550               	.LBE80:
+ 551               	.LBE79:
+ 110:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 7);
+ 552               		.loc 4 110 0 discriminator 1
+ 553 00f8 86E0      		ldi r24,lo8(6)
+ 554 00fa 00C0      		rjmp .L48
+ 555               	.LVL67:
+ 556               	.L36:
+ 557               	.LBB84:
+ 558               	.LBB83:
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 559               		.loc 2 111 0
+ 560               	.LVL68:
+ 561               	.LBB81:
+ 562               	.LBB82:
+ 563               		.loc 3 276 0
+ 564 00fc 25E0      		ldi r18,lo8(5)
+ 565 00fe 2A95      	1:	dec r18
+ 566 0100 01F4      		brne 1b
+ 567 0102 0000      		nop
+ 568               	.LVL69:
+ 569               	.LBE82:
+ 570               	.LBE81:
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 571               		.loc 2 111 0
+ 572 0104 2197      		sbiw r28,1
+ 573               	.LVL70:
+ 574 0106 00C0      		rjmp .L34
+ 575               	.L35:
+ 576               	.LVL71:
+ 577               	.LBE83:
+ 578               	.LBE84:
+ 110:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(clock_lo, 50, 7);
+ 579               		.loc 4 110 0
+ 580 0108 CD2B      		or r28,r29
+ 581 010a 01F0      		breq .L37
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 582               		.loc 4 111 0
+ 583 010c 82E3      		ldi r24,lo8(50)
+ 584 010e 90E0      		ldi r25,0
+ 585 0110 0E94 0000 		call wait_clock_lo
+ 586               	.LVL72:
+ 587 0114 892B      		or r24,r25
+ 588 0116 01F4      		brne .L39
+ 111:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 589               		.loc 4 111 0 is_stmt 0 discriminator 1
+ 590 0118 87E0      		ldi r24,lo8(7)
+ 591 011a 00C0      		rjmp .L48
+ 592               	.L39:
+ 114:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(data_hi, 50, 9);
+ 593               		.loc 4 114 0 is_stmt 1
+ 594 011c 0E94 0000 		call wait_clock_hi.constprop.2
+ 595               	.LVL73:
+ 596 0120 892B      		or r24,r25
+ 597 0122 01F4      		brne .L46
+ 114:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     WAIT(data_hi, 50, 9);
+ 598               		.loc 4 114 0 is_stmt 0 discriminator 1
+ 599 0124 88E0      		ldi r24,lo8(8)
+ 600 0126 00C0      		rjmp .L48
+ 601               	.LVL74:
+ 602               	.L42:
+ 603               	.LBB85:
+ 604               	.LBB86:
+ 116:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 605               		.loc 2 116 0 is_stmt 1
+ 606               	.LVL75:
+ 607               	.LBB87:
+ 608               	.LBB88:
+ 609               		.loc 3 276 0
+ 610 0128 85E0      		ldi r24,lo8(5)
+ 611 012a 8A95      	1:	dec r24
+ 612 012c 01F4      		brne 1b
+ 613 012e 0000      		nop
+ 614               	.LVL76:
+ 615               	.LBE88:
+ 616               	.LBE87:
+ 116:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     return us;
+ 617               		.loc 2 116 0
+ 618 0130 2197      		sbiw r28,1
+ 619               	.LVL77:
+ 620               	.L40:
+ 621 0132 0E94 0000 		call data_in
+ 622               	.LVL78:
+ 623 0136 8111      		cpse r24,__zero_reg__
+ 624 0138 00C0      		rjmp .L41
+ 625 013a 2097      		sbiw r28,0
+ 626 013c 01F4      		brne .L42
+ 627               	.LVL79:
+ 628               	.L43:
+ 629               	.LBE86:
+ 630               	.LBE85:
+ 115:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 631               		.loc 4 115 0 discriminator 1
+ 632 013e 89E0      		ldi r24,lo8(9)
+ 633 0140 00C0      		rjmp .L48
+ 634               	.L46:
+ 635 0142 C2E3      		ldi r28,lo8(50)
+ 636 0144 D0E0      		ldi r29,0
+ 637 0146 00C0      		rjmp .L40
+ 638               	.LVL80:
+ 639               	.L41:
+ 115:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 640               		.loc 4 115 0 is_stmt 0
+ 641 0148 CD2B      		or r28,r29
+ 642 014a 01F0      		breq .L43
+ 643               	.LBB89:
+ 644               	.LBB90:
+ 123:/users/hunter/downloads/tmk_core/protocol/ps2.h ****     data_hi();
+ 645               		.loc 2 123 0 is_stmt 1
+ 646 014c 0E94 0000 		call clock_hi
+ 647               	.LVL81:
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2.h **** }
+ 648               		.loc 2 124 0
+ 649 0150 0E94 0000 		call data_hi
+ 650               	.LVL82:
+ 651               	.LBE90:
+ 652               	.LBE89:
+ 118:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return ps2_host_recv_response();
+ 653               		.loc 4 118 0
+ 654 0154 E99A      		sbi 0x1d,1
+ 655               	/* epilogue start */
+ 124:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 656               		.loc 4 124 0
+ 657 0156 DF91      		pop r29
+ 658 0158 CF91      		pop r28
+ 659 015a 1F91      		pop r17
+ 660               	.LVL83:
+ 661 015c 0F91      		pop r16
+ 662 015e FF90      		pop r15
+ 663 0160 EF90      		pop r14
+ 664               	.LVL84:
+ 119:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ERROR:
+ 665               		.loc 4 119 0
+ 666 0162 0C94 0000 		jmp ps2_host_recv_response
+ 667               	.LVL85:
+ 668               		.cfi_endproc
+ 669               	.LFE18:
+ 671               		.section	.text.ps2_host_recv,"ax",@progbits
+ 672               	.global	ps2_host_recv
+ 674               	ps2_host_recv:
+ 675               	.LFB20:
+ 135:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 136:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** /* get data received by interrupt */
+ 137:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** uint8_t ps2_host_recv(void)
+ 138:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+ 676               		.loc 4 138 0
+ 677               		.cfi_startproc
+ 678               	/* prologue: function */
+ 679               	/* frame size = 0 */
+ 680               	/* stack size = 0 */
+ 681               	.L__stack_usage = 0
+ 682               	.LBB93:
+ 683               	.LBB94:
+  43:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     cli();
+ 684               		.loc 1 43 0
+ 685 0000 4FB7      		in r20,__SREG__
+ 686               	.LVL86:
+  44:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     bool has_data = (pbuf_head != pbuf_tail);
+ 687               		.loc 1 44 0
+ 688               	/* #APP */
+ 689               	 ;  44 "/users/hunter/downloads/tmk_core/protocol/pbuff.h" 1
+ 690 0002 F894      		cli
+ 691               	 ;  0 "" 2
+  45:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     SREG = sreg;
+ 692               		.loc 1 45 0
+ 693               	/* #NOAPP */
+ 694 0004 2091 0000 		lds r18,pbuf_head
+ 695 0008 3091 0000 		lds r19,pbuf_head+1
+ 696 000c 8091 0000 		lds r24,pbuf_tail
+ 697 0010 9091 0000 		lds r25,pbuf_tail+1
+ 698               	.LVL87:
+ 699               		.loc 1 46 0
+ 700 0014 4FBF      		out __SREG__,r20
+ 701               	.LVL88:
+ 702               	.LBE94:
+ 703               	.LBE93:
+ 139:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     if (pbuf_has_data()) {
+ 704               		.loc 4 139 0
+ 705 0016 2817      		cp r18,r24
+ 706 0018 3907      		cpc r19,r25
+ 707 001a 01F0      		breq .L50
+ 140:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         ps2_error = PS2_ERR_NONE;
+ 708               		.loc 4 140 0
+ 709 001c 1092 0000 		sts ps2_error,__zero_reg__
+ 141:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         return pbuf_dequeue();
+ 710               		.loc 4 141 0
+ 711 0020 0E94 0000 		call pbuf_dequeue
+ 712               	.LVL89:
+ 713 0024 0895      		ret
+ 714               	.L50:
+ 142:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     } else {
+ 143:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         ps2_error = PS2_ERR_NODATA;
+ 715               		.loc 4 143 0
+ 716 0026 80E2      		ldi r24,lo8(32)
+ 717 0028 8093 0000 		sts ps2_error,r24
+ 144:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         return 0;
+ 718               		.loc 4 144 0
+ 719 002c 80E0      		ldi r24,0
+ 720               	/* epilogue start */
+ 145:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 146:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 721               		.loc 4 146 0
+ 722 002e 0895      		ret
+ 723               		.cfi_endproc
+ 724               	.LFE20:
+ 726               		.section	.text.__vector_2,"ax",@progbits
+ 727               	.global	__vector_2
+ 729               	__vector_2:
+ 730               	.LFB21:
+ 147:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 148:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ISR(PS2_INT_VECT)
+ 149:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+ 731               		.loc 4 149 0
+ 732               		.cfi_startproc
+ 733 0000 1F92      		push r1
+ 734               	.LCFI10:
+ 735               		.cfi_def_cfa_offset 3
+ 736               		.cfi_offset 1, -2
+ 737 0002 0F92      		push r0
+ 738               	.LCFI11:
+ 739               		.cfi_def_cfa_offset 4
+ 740               		.cfi_offset 0, -3
+ 741 0004 0FB6      		in r0,__SREG__
+ 742 0006 0F92      		push r0
+ 743 0008 1124      		clr __zero_reg__
+ 744 000a 2F93      		push r18
+ 745               	.LCFI12:
+ 746               		.cfi_def_cfa_offset 5
+ 747               		.cfi_offset 18, -4
+ 748 000c 3F93      		push r19
+ 749               	.LCFI13:
+ 750               		.cfi_def_cfa_offset 6
+ 751               		.cfi_offset 19, -5
+ 752 000e 4F93      		push r20
+ 753               	.LCFI14:
+ 754               		.cfi_def_cfa_offset 7
+ 755               		.cfi_offset 20, -6
+ 756 0010 5F93      		push r21
+ 757               	.LCFI15:
+ 758               		.cfi_def_cfa_offset 8
+ 759               		.cfi_offset 21, -7
+ 760 0012 6F93      		push r22
+ 761               	.LCFI16:
+ 762               		.cfi_def_cfa_offset 9
+ 763               		.cfi_offset 22, -8
+ 764 0014 7F93      		push r23
+ 765               	.LCFI17:
+ 766               		.cfi_def_cfa_offset 10
+ 767               		.cfi_offset 23, -9
+ 768 0016 8F93      		push r24
+ 769               	.LCFI18:
+ 770               		.cfi_def_cfa_offset 11
+ 771               		.cfi_offset 24, -10
+ 772 0018 9F93      		push r25
+ 773               	.LCFI19:
+ 774               		.cfi_def_cfa_offset 12
+ 775               		.cfi_offset 25, -11
+ 776 001a AF93      		push r26
+ 777               	.LCFI20:
+ 778               		.cfi_def_cfa_offset 13
+ 779               		.cfi_offset 26, -12
+ 780 001c BF93      		push r27
+ 781               	.LCFI21:
+ 782               		.cfi_def_cfa_offset 14
+ 783               		.cfi_offset 27, -13
+ 784 001e CF93      		push r28
+ 785               	.LCFI22:
+ 786               		.cfi_def_cfa_offset 15
+ 787               		.cfi_offset 28, -14
+ 788 0020 EF93      		push r30
+ 789               	.LCFI23:
+ 790               		.cfi_def_cfa_offset 16
+ 791               		.cfi_offset 30, -15
+ 792 0022 FF93      		push r31
+ 793               	.LCFI24:
+ 794               		.cfi_def_cfa_offset 17
+ 795               		.cfi_offset 31, -16
+ 796               	/* prologue: Signal */
+ 797               	/* frame size = 0 */
+ 798               	/* stack size = 16 */
+ 799               	.L__stack_usage = 16
+ 150:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     static enum {
+ 151:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         INIT,
+ 152:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         START,
+ 153:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         BIT0, BIT1, BIT2, BIT3, BIT4, BIT5, BIT6, BIT7,
+ 154:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         PARITY,
+ 155:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         STOP,
+ 156:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     } state = INIT;
+ 157:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     static uint8_t data = 0;
+ 158:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     static uint8_t parity = 1;
+ 159:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 160:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     // TODO: abort if elapse 100us from previous interrupt
+ 161:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 162:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     // return unless falling edge
+ 163:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     if (clock_in()) {
+ 800               		.loc 4 163 0
+ 801 0024 0E94 0000 		call clock_in
+ 802               	.LVL90:
+ 803 0028 8111      		cpse r24,__zero_reg__
+ 804 002a 00C0      		rjmp .L52
+ 164:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         goto RETURN;
+ 165:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 166:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 167:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     state++;
+ 805               		.loc 4 167 0
+ 806 002c 8091 0000 		lds r24,state.1948
+ 807 0030 8F5F      		subi r24,lo8(-(1))
+ 808 0032 8093 0000 		sts state.1948,r24
+ 168:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     switch (state) {
+ 809               		.loc 4 168 0
+ 810 0036 8A30      		cpi r24,lo8(10)
+ 811 0038 00F4      		brsh .L56
+ 812 003a 8230      		cpi r24,lo8(2)
+ 813 003c 00F0      		brlo .+2
+ 814 003e 00C0      		rjmp .L57
+ 815 0040 8130      		cpi r24,lo8(1)
+ 816 0042 01F0      		breq .L58
+ 817               	.L55:
+ 169:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case START:
+ 170:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             if (data_in())
+ 171:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 goto ERROR;
+ 172:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             break;
+ 173:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT0:
+ 174:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT1:
+ 175:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT2:
+ 176:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT3:
+ 177:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT4:
+ 178:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT5:
+ 179:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT6:
+ 180:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case BIT7:
+ 181:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             data >>= 1;
+ 182:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             if (data_in()) {
+ 183:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 data |= 0x80;
+ 184:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 parity++;
+ 185:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             }
+ 186:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             break;
+ 187:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case PARITY:
+ 188:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             if (data_in()) {
+ 189:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 if (!(parity & 0x01))
+ 190:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                     goto ERROR;
+ 191:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             } else {
+ 192:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 if (parity & 0x01)
+ 193:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                     goto ERROR;
+ 194:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             }
+ 195:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             break;
+ 196:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         case STOP:
+ 197:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             if (!data_in())
+ 198:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 goto ERROR;
+ 199:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             pbuf_enqueue(data);
+ 200:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             goto DONE;
+ 201:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             break;
+ 202:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****         default:
+ 203:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             goto ERROR;
+ 204:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     }
+ 205:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     goto RETURN;
+ 206:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** ERROR:
+ 207:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_error = state;
+ 818               		.loc 4 207 0
+ 819 0044 8091 0000 		lds r24,state.1948
+ 820 0048 8093 0000 		sts ps2_error,r24
+ 821 004c 00C0      		rjmp .L66
+ 822               	.L56:
+ 168:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     switch (state) {
+ 823               		.loc 4 168 0
+ 824 004e 8A30      		cpi r24,lo8(10)
+ 825 0050 01F4      		brne .+2
+ 826 0052 00C0      		rjmp .L59
+ 827 0054 8B30      		cpi r24,lo8(11)
+ 828 0056 01F4      		brne .L55
+ 197:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 goto ERROR;
+ 829               		.loc 4 197 0
+ 830 0058 0E94 0000 		call data_in
+ 831               	.LVL91:
+ 832 005c 8823      		tst r24
+ 833 005e 01F0      		breq .L55
+ 199:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             goto DONE;
+ 834               		.loc 4 199 0
+ 835 0060 4091 0000 		lds r20,data.1949
+ 836 0064 50E0      		ldi r21,0
+ 837               	.LVL92:
+ 838               	.LBB98:
+ 839               	.LBB99:
+  16:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     cli();
+ 840               		.loc 1 16 0
+ 841 0066 CFB7      		in r28,__SREG__
+ 842               	.LVL93:
+  17:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     uint16_t next = (pbuf_head + 1) % PBUF_SIZE;
+ 843               		.loc 1 17 0
+ 844               	/* #APP */
+ 845               	 ;  17 "/users/hunter/downloads/tmk_core/protocol/pbuff.h" 1
+ 846 0068 F894      		cli
+ 847               	 ;  0 "" 2
+  18:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     if (next != pbuf_tail) {
+ 848               		.loc 1 18 0
+ 849               	/* #NOAPP */
+ 850 006a 8091 0000 		lds r24,pbuf_head
+ 851 006e 9091 0000 		lds r25,pbuf_head+1
+ 852 0072 9C01      		movw r18,r24
+ 853 0074 2F5F      		subi r18,-1
+ 854 0076 3F4F      		sbci r19,-1
+ 855 0078 2F71      		andi r18,31
+ 856 007a 3327      		clr r19
+ 857               	.LVL94:
+  19:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         pbuf[pbuf_head] = data;
+ 858               		.loc 1 19 0
+ 859 007c 6091 0000 		lds r22,pbuf_tail
+ 860 0080 7091 0000 		lds r23,pbuf_tail+1
+ 861 0084 2617      		cp r18,r22
+ 862 0086 3707      		cpc r19,r23
+ 863 0088 01F4      		brne .+2
+ 864 008a 00C0      		rjmp .L64
+  20:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****         pbuf_head = next;
+ 865               		.loc 1 20 0
+ 866 008c 880F      		lsl r24
+ 867 008e 991F      		rol r25
+ 868 0090 FC01      		movw r30,r24
+ 869 0092 E050      		subi r30,lo8(-(pbuf))
+ 870 0094 F040      		sbci r31,hi8(-(pbuf))
+ 871 0096 5183      		std Z+1,r21
+ 872 0098 4083      		st Z,r20
+  21:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     } else {
+ 873               		.loc 1 21 0
+ 874 009a 3093 0000 		sts pbuf_head+1,r19
+ 875 009e 2093 0000 		sts pbuf_head,r18
+ 876               	.LVL95:
+ 877               	.L65:
+  25:/users/hunter/downloads/tmk_core/protocol/pbuff.h **** }
+ 878               		.loc 1 25 0
+ 879 00a2 CFBF      		out __SREG__,r28
+ 880               	.LVL96:
+ 881               	.L66:
+ 882               	.LBE99:
+ 883               	.LBE98:
+ 208:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** DONE:
+ 209:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     state = INIT;
+ 884               		.loc 4 209 0
+ 885 00a4 1092 0000 		sts state.1948,__zero_reg__
+ 210:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     data = 0;
+ 886               		.loc 4 210 0
+ 887 00a8 1092 0000 		sts data.1949,__zero_reg__
+ 211:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     parity = 1;
+ 888               		.loc 4 211 0
+ 889 00ac 81E0      		ldi r24,lo8(1)
+ 890 00ae 00C0      		rjmp .L79
+ 891               	.L58:
+ 170:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 goto ERROR;
+ 892               		.loc 4 170 0
+ 893 00b0 0E94 0000 		call data_in
+ 894               	.LVL97:
+ 895 00b4 8111      		cpse r24,__zero_reg__
+ 896 00b6 00C0      		rjmp .L55
+ 897               	.L54:
+ 898               	.L52:
+ 899               	/* epilogue start */
+ 212:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** RETURN:
+ 213:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     return;
+ 214:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 900               		.loc 4 214 0
+ 901 00b8 FF91      		pop r31
+ 902 00ba EF91      		pop r30
+ 903 00bc CF91      		pop r28
+ 904 00be BF91      		pop r27
+ 905 00c0 AF91      		pop r26
+ 906 00c2 9F91      		pop r25
+ 907 00c4 8F91      		pop r24
+ 908 00c6 7F91      		pop r23
+ 909 00c8 6F91      		pop r22
+ 910 00ca 5F91      		pop r21
+ 911 00cc 4F91      		pop r20
+ 912 00ce 3F91      		pop r19
+ 913 00d0 2F91      		pop r18
+ 914 00d2 0F90      		pop r0
+ 915 00d4 0FBE      		out __SREG__,r0
+ 916 00d6 0F90      		pop r0
+ 917 00d8 1F90      		pop r1
+ 918 00da 1895      		reti
+ 919               	.L57:
+ 181:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             if (data_in()) {
+ 920               		.loc 4 181 0
+ 921 00dc 8091 0000 		lds r24,data.1949
+ 922 00e0 8695      		lsr r24
+ 923 00e2 8093 0000 		sts data.1949,r24
+ 182:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 data |= 0x80;
+ 924               		.loc 4 182 0
+ 925 00e6 0E94 0000 		call data_in
+ 926               	.LVL98:
+ 927 00ea 8823      		tst r24
+ 928 00ec 01F0      		breq .L52
+ 183:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 parity++;
+ 929               		.loc 4 183 0
+ 930 00ee 8091 0000 		lds r24,data.1949
+ 931 00f2 8068      		ori r24,lo8(-128)
+ 932 00f4 8093 0000 		sts data.1949,r24
+ 184:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****             }
+ 933               		.loc 4 184 0
+ 934 00f8 8091 0000 		lds r24,parity.1950
+ 935 00fc 8F5F      		subi r24,lo8(-(1))
+ 936               	.L79:
+ 211:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** RETURN:
+ 937               		.loc 4 211 0
+ 938 00fe 8093 0000 		sts parity.1950,r24
+ 213:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 939               		.loc 4 213 0
+ 940 0102 00C0      		rjmp .L52
+ 941               	.L59:
+ 188:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                 if (!(parity & 0x01))
+ 942               		.loc 4 188 0
+ 943 0104 0E94 0000 		call data_in
+ 944               	.LVL99:
+ 945 0108 9091 0000 		lds r25,parity.1950
+ 946 010c 8823      		tst r24
+ 947 010e 01F0      		breq .L62
+ 189:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                     goto ERROR;
+ 948               		.loc 4 189 0
+ 949 0110 90FF      		sbrs r25,0
+ 950 0112 00C0      		rjmp .L55
+ 951 0114 00C0      		rjmp .L52
+ 952               	.L62:
+ 192:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****                     goto ERROR;
+ 953               		.loc 4 192 0
+ 954 0116 90FD      		sbrc r25,0
+ 955 0118 00C0      		rjmp .L55
+ 956 011a 00C0      		rjmp .L52
+ 957               	.LVL100:
+ 958               	.L64:
+ 959               	.LBB101:
+ 960               	.LBB100:
+  23:/users/hunter/downloads/tmk_core/protocol/pbuff.h ****     }
+ 961               		.loc 1 23 0
+ 962 011c 80E0      		ldi r24,lo8(__c.1834)
+ 963 011e 90E0      		ldi r25,hi8(__c.1834)
+ 964 0120 0E94 0000 		call xputs
+ 965               	.LVL101:
+ 966 0124 00C0      		rjmp .L65
+ 967               	.LBE100:
+ 968               	.LBE101:
+ 969               		.cfi_endproc
+ 970               	.LFE21:
+ 972               		.section	.text.ps2_host_set_led,"ax",@progbits
+ 973               	.global	ps2_host_set_led
+ 975               	ps2_host_set_led:
+ 976               	.LFB22:
+ 215:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** 
+ 216:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** /* send LED state to keyboard */
+ 217:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** void ps2_host_set_led(uint8_t led)
+ 218:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** {
+ 977               		.loc 4 218 0
+ 978               		.cfi_startproc
+ 979               	.LVL102:
+ 980 0000 CF93      		push r28
+ 981               	.LCFI25:
+ 982               		.cfi_def_cfa_offset 3
+ 983               		.cfi_offset 28, -2
+ 984               	/* prologue: function */
+ 985               	/* frame size = 0 */
+ 986               	/* stack size = 1 */
+ 987               	.L__stack_usage = 1
+ 988 0002 C82F      		mov r28,r24
+ 219:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_host_send(0xED);
+ 989               		.loc 4 219 0
+ 990 0004 8DEE      		ldi r24,lo8(-19)
+ 991               	.LVL103:
+ 992 0006 0E94 0000 		call ps2_host_send
+ 993               	.LVL104:
+ 220:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_host_send(led);
+ 994               		.loc 4 220 0
+ 995 000a 8C2F      		mov r24,r28
+ 996               	/* epilogue start */
+ 221:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c **** }
+ 997               		.loc 4 221 0
+ 998 000c CF91      		pop r28
+ 999               	.LVL105:
+ 220:/users/hunter/downloads/tmk_core/protocol/ps2_interrupt.c ****     ps2_host_send(led);
+ 1000               		.loc 4 220 0
+ 1001 000e 0C94 0000 		jmp ps2_host_send
+ 1002               	.LVL106:
+ 1003               		.cfi_endproc
+ 1004               	.LFE22:
+ 1006               		.section	.progmem.data.__c.1834,"a",@progbits
+ 1009               	__c.1834:
+ 1010 0000 7062 7566 		.string	"pbuf: full\n"
+ 1010      3A20 6675 
+ 1010      6C6C 0A00 
+ 1011               		.section	.data.parity.1950,"aw",@progbits
+ 1014               	parity.1950:
+ 1015 0000 01        		.byte	1
+ 1016               		.section	.bss.data.1949,"aw",@nobits
+ 1019               	data.1949:
+ 1020 0000 00        		.zero	1
+ 1021               		.section	.bss.state.1948,"aw",@nobits
+ 1024               	state.1948:
+ 1025 0000 00        		.zero	1
+ 1026               	.global	ps2_error
+ 1027               		.section	.bss.ps2_error,"aw",@nobits
+ 1030               	ps2_error:
+ 1031 0000 00        		.zero	1
+ 1032               		.section	.bss.pbuf_tail,"aw",@nobits
+ 1035               	pbuf_tail:
+ 1036 0000 0000      		.zero	2
+ 1037               		.section	.bss.pbuf_head,"aw",@nobits
+ 1040               	pbuf_head:
+ 1041 0000 0000      		.zero	2
+ 1042               		.section	.bss.pbuf,"aw",@nobits
+ 1045               	pbuf:
+ 1046 0000 0000 0000 		.zero	64
+ 1046      0000 0000 
+ 1046      0000 0000 
+ 1046      0000 0000 
+ 1046      0000 0000 
+ 1047               		.text
+ 1048               	.Letext0:
+ 1049               		.file 5 "/opt/local/avr/include/stdint.h"
+ 1050               		.file 6 "/users/hunter/downloads/tmk_core/common/avr/xprintf.h"
+ 1051               		.file 7 "/users/hunter/downloads/tmk_core/protocol/ps2_io.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 ps2_interrupt.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:12     .text.pbuf_dequeue:0000000000000000 pbuf_dequeue
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1035   .bss.pbuf_tail:0000000000000000 pbuf_tail
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1040   .bss.pbuf_head:0000000000000000 pbuf_head
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1045   .bss.pbuf:0000000000000000 pbuf
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:73     .text.wait_clock_lo:0000000000000000 wait_clock_lo
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:134    .text.wait_clock_hi.constprop.2:0000000000000000 wait_clock_hi.constprop.2
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:195    .text.ps2_host_init:0000000000000000 ps2_host_init
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:231    .text.ps2_host_recv_response:0000000000000000 ps2_host_recv_response
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:302    .text.ps2_host_send:0000000000000000 ps2_host_send
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1030   .bss.ps2_error:0000000000000000 ps2_error
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:674    .text.ps2_host_recv:0000000000000000 ps2_host_recv
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:729    .text.__vector_2:0000000000000000 __vector_2
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1024   .bss.state.1948:0000000000000000 state.1948
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1019   .bss.data.1949:0000000000000000 data.1949
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1014   .data.parity.1950:0000000000000000 parity.1950
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:1009   .progmem.data.__c.1834:0000000000000000 __c.1834
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccCIBq9n.s:975    .text.ps2_host_set_led:0000000000000000 ps2_host_set_led
+
+UNDEFINED SYMBOLS
+clock_in
+clock_hi
+data_hi
+clock_lo
+data_lo
+data_in
+xputs
+__do_copy_data
+__do_clear_bss

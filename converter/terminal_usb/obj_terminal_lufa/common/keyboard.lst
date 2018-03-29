@@ -1,0 +1,604 @@
+   1               		.file	"keyboard.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.keyboard_setup,"ax",@progbits
+  11               	.global	keyboard_setup
+  13               	keyboard_setup:
+  14               	.LFB4:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/common/keyboard.c"
+   1:/users/hunter/downloads/tmk_core/common/keyboard.c **** /*
+   2:/users/hunter/downloads/tmk_core/common/keyboard.c **** Copyright 2011,2012,2013 Jun Wako <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+   4:/users/hunter/downloads/tmk_core/common/keyboard.c **** This program is free software: you can redistribute it and/or modify
+   5:/users/hunter/downloads/tmk_core/common/keyboard.c **** it under the terms of the GNU General Public License as published by
+   6:/users/hunter/downloads/tmk_core/common/keyboard.c **** the Free Software Foundation, either version 2 of the License, or
+   7:/users/hunter/downloads/tmk_core/common/keyboard.c **** (at your option) any later version.
+   8:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+   9:/users/hunter/downloads/tmk_core/common/keyboard.c **** This program is distributed in the hope that it will be useful,
+  10:/users/hunter/downloads/tmk_core/common/keyboard.c **** but WITHOUT ANY WARRANTY; without even the implied warranty of
+  11:/users/hunter/downloads/tmk_core/common/keyboard.c **** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  12:/users/hunter/downloads/tmk_core/common/keyboard.c **** GNU General Public License for more details.
+  13:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  14:/users/hunter/downloads/tmk_core/common/keyboard.c **** You should have received a copy of the GNU General Public License
+  15:/users/hunter/downloads/tmk_core/common/keyboard.c **** along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  16:/users/hunter/downloads/tmk_core/common/keyboard.c **** */
+  17:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include <stdint.h>
+  18:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "keyboard.h"
+  19:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "matrix.h"
+  20:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "keymap.h"
+  21:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "host.h"
+  22:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "led.h"
+  23:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "keycode.h"
+  24:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "timer.h"
+  25:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "print.h"
+  26:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "debug.h"
+  27:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "command.h"
+  28:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "util.h"
+  29:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "sendchar.h"
+  30:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "bootmagic.h"
+  31:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "eeconfig.h"
+  32:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "backlight.h"
+  33:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "hook.h"
+  34:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef MOUSEKEY_ENABLE
+  35:/users/hunter/downloads/tmk_core/common/keyboard.c **** #   include "mousekey.h"
+  36:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  37:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef PS2_MOUSE_ENABLE
+  38:/users/hunter/downloads/tmk_core/common/keyboard.c **** #   include "ps2_mouse.h"
+  39:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  40:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef SERIAL_MOUSE_ENABLE
+  41:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "serial_mouse.h"
+  42:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  43:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef ADB_MOUSE_ENABLE
+  44:/users/hunter/downloads/tmk_core/common/keyboard.c **** #include "adb.h"
+  45:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  46:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  47:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  48:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef MATRIX_HAS_GHOST
+  49:/users/hunter/downloads/tmk_core/common/keyboard.c **** static bool has_ghost_in_row(uint8_t row)
+  50:/users/hunter/downloads/tmk_core/common/keyboard.c **** {
+  51:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_row_t matrix_row = matrix_get_row(row);
+  52:/users/hunter/downloads/tmk_core/common/keyboard.c ****     // No ghost exists when less than 2 keys are down on the row
+  53:/users/hunter/downloads/tmk_core/common/keyboard.c ****     if (((matrix_row - 1) & matrix_row) == 0)
+  54:/users/hunter/downloads/tmk_core/common/keyboard.c ****         return false;
+  55:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  56:/users/hunter/downloads/tmk_core/common/keyboard.c ****     // Ghost occurs when the row shares column line with other row
+  57:/users/hunter/downloads/tmk_core/common/keyboard.c ****     for (uint8_t i=0; i < MATRIX_ROWS; i++) {
+  58:/users/hunter/downloads/tmk_core/common/keyboard.c ****         if (i != row && (matrix_get_row(i) & matrix_row))
+  59:/users/hunter/downloads/tmk_core/common/keyboard.c ****             return true;
+  60:/users/hunter/downloads/tmk_core/common/keyboard.c ****     }
+  61:/users/hunter/downloads/tmk_core/common/keyboard.c ****     return false;
+  62:/users/hunter/downloads/tmk_core/common/keyboard.c **** }
+  63:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  64:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  65:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  66:/users/hunter/downloads/tmk_core/common/keyboard.c **** void keyboard_setup(void)
+  67:/users/hunter/downloads/tmk_core/common/keyboard.c **** {
+  16               		.loc 1 67 0
+  17               		.cfi_startproc
+  18               	/* prologue: function */
+  19               	/* frame size = 0 */
+  20               	/* stack size = 0 */
+  21               	.L__stack_usage = 0
+  68:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_setup();
+  22               		.loc 1 68 0
+  23 0000 0C94 0000 		jmp matrix_setup
+  24               	.LVL0:
+  25               		.cfi_endproc
+  26               	.LFE4:
+  28               		.section	.text.keyboard_init,"ax",@progbits
+  29               	.global	keyboard_init
+  31               	keyboard_init:
+  32               	.LFB5:
+  69:/users/hunter/downloads/tmk_core/common/keyboard.c **** }
+  70:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  71:/users/hunter/downloads/tmk_core/common/keyboard.c **** void keyboard_init(void)
+  72:/users/hunter/downloads/tmk_core/common/keyboard.c **** {
+  33               		.loc 1 72 0
+  34               		.cfi_startproc
+  35               	/* prologue: function */
+  36               	/* frame size = 0 */
+  37               	/* stack size = 0 */
+  38               	.L__stack_usage = 0
+  73:/users/hunter/downloads/tmk_core/common/keyboard.c ****     timer_init();
+  39               		.loc 1 73 0
+  40 0000 0E94 0000 		call timer_init
+  41               	.LVL1:
+  74:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_init();
+  42               		.loc 1 74 0
+  43 0004 0C94 0000 		jmp matrix_init
+  44               	.LVL2:
+  45               		.cfi_endproc
+  46               	.LFE5:
+  48               		.section	.text.keyboard_task,"ax",@progbits
+  49               	.global	keyboard_task
+  51               	keyboard_task:
+  52               	.LFB6:
+  75:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef PS2_MOUSE_ENABLE
+  76:/users/hunter/downloads/tmk_core/common/keyboard.c ****     ps2_mouse_init();
+  77:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  78:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef SERIAL_MOUSE_ENABLE
+  79:/users/hunter/downloads/tmk_core/common/keyboard.c ****     serial_mouse_init();
+  80:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  81:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef ADB_MOUSE_ENABLE
+  82:/users/hunter/downloads/tmk_core/common/keyboard.c ****     adb_mouse_init();
+  83:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  84:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  85:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  86:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef BOOTMAGIC_ENABLE
+  87:/users/hunter/downloads/tmk_core/common/keyboard.c ****     bootmagic();
+  88:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  89:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  90:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef BACKLIGHT_ENABLE
+  91:/users/hunter/downloads/tmk_core/common/keyboard.c ****     backlight_init();
+  92:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+  93:/users/hunter/downloads/tmk_core/common/keyboard.c **** }
+  94:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+  95:/users/hunter/downloads/tmk_core/common/keyboard.c **** /*
+  96:/users/hunter/downloads/tmk_core/common/keyboard.c ****  * Do keyboard routine jobs: scan mantrix, light LEDs, ...
+  97:/users/hunter/downloads/tmk_core/common/keyboard.c ****  * This is repeatedly called as fast as possible.
+  98:/users/hunter/downloads/tmk_core/common/keyboard.c ****  */
+  99:/users/hunter/downloads/tmk_core/common/keyboard.c **** void keyboard_task(void)
+ 100:/users/hunter/downloads/tmk_core/common/keyboard.c **** {
+  53               		.loc 1 100 0
+  54               		.cfi_startproc
+  55 0000 BF92      		push r11
+  56               	.LCFI0:
+  57               		.cfi_def_cfa_offset 3
+  58               		.cfi_offset 11, -2
+  59 0002 CF92      		push r12
+  60               	.LCFI1:
+  61               		.cfi_def_cfa_offset 4
+  62               		.cfi_offset 12, -3
+  63 0004 DF92      		push r13
+  64               	.LCFI2:
+  65               		.cfi_def_cfa_offset 5
+  66               		.cfi_offset 13, -4
+  67 0006 EF92      		push r14
+  68               	.LCFI3:
+  69               		.cfi_def_cfa_offset 6
+  70               		.cfi_offset 14, -5
+  71 0008 FF92      		push r15
+  72               	.LCFI4:
+  73               		.cfi_def_cfa_offset 7
+  74               		.cfi_offset 15, -6
+  75 000a 0F93      		push r16
+  76               	.LCFI5:
+  77               		.cfi_def_cfa_offset 8
+  78               		.cfi_offset 16, -7
+  79 000c 1F93      		push r17
+  80               	.LCFI6:
+  81               		.cfi_def_cfa_offset 9
+  82               		.cfi_offset 17, -8
+  83 000e CF93      		push r28
+  84               	.LCFI7:
+  85               		.cfi_def_cfa_offset 10
+  86               		.cfi_offset 28, -9
+  87 0010 DF93      		push r29
+  88               	.LCFI8:
+  89               		.cfi_def_cfa_offset 11
+  90               		.cfi_offset 29, -10
+  91 0012 00D0      		rcall .
+  92 0014 00D0      		rcall .
+  93 0016 1F92      		push __zero_reg__
+  94               	.LCFI9:
+  95               		.cfi_def_cfa_offset 16
+  96 0018 CDB7      		in r28,__SP_L__
+  97 001a DEB7      		in r29,__SP_H__
+  98               	.LCFI10:
+  99               		.cfi_def_cfa_register 28
+ 100               	/* prologue: function */
+ 101               	/* frame size = 5 */
+ 102               	/* stack size = 14 */
+ 103               	.L__stack_usage = 14
+ 104               	.LVL3:
+ 101:/users/hunter/downloads/tmk_core/common/keyboard.c ****     static matrix_row_t matrix_prev[MATRIX_ROWS];
+ 102:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef MATRIX_HAS_GHOST
+ 103:/users/hunter/downloads/tmk_core/common/keyboard.c ****     static matrix_row_t matrix_ghost[MATRIX_ROWS];
+ 104:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 105:/users/hunter/downloads/tmk_core/common/keyboard.c ****     static uint8_t led_status = 0;
+ 106:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_row_t matrix_row = 0;
+ 107:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_row_t matrix_change = 0;
+ 108:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 109:/users/hunter/downloads/tmk_core/common/keyboard.c ****     matrix_scan();
+ 105               		.loc 1 109 0
+ 106 001c 0E94 0000 		call matrix_scan
+ 107               	.LVL4:
+ 108 0020 80E0      		ldi r24,lo8(matrix_prev.2344)
+ 109 0022 C82E      		mov r12,r24
+ 110 0024 80E0      		ldi r24,hi8(matrix_prev.2344)
+ 111 0026 D82E      		mov r13,r24
+ 112 0028 10E0      		ldi r17,0
+ 113 002a 00E0      		ldi r16,0
+ 114               	.LVL5:
+ 115               	.L10:
+ 116 002c B02E      		mov r11,r16
+ 117               	.LVL6:
+ 118               	.LBB2:
+ 110:/users/hunter/downloads/tmk_core/common/keyboard.c ****     for (uint8_t r = 0; r < MATRIX_ROWS; r++) {
+ 111:/users/hunter/downloads/tmk_core/common/keyboard.c ****         matrix_row = matrix_get_row(r);
+ 119               		.loc 1 111 0
+ 120 002e 802F      		mov r24,r16
+ 121 0030 0E94 0000 		call matrix_get_row
+ 122               	.LVL7:
+ 123 0034 E82E      		mov r14,r24
+ 124               	.LVL8:
+ 112:/users/hunter/downloads/tmk_core/common/keyboard.c ****         matrix_change = matrix_row ^ matrix_prev[r];
+ 125               		.loc 1 112 0
+ 126 0036 F601      		movw r30,r12
+ 127 0038 F190      		ld r15,Z+
+ 128 003a 6F01      		movw r12,r30
+ 129               	.LVL9:
+ 113:/users/hunter/downloads/tmk_core/common/keyboard.c ****         if (matrix_change) {
+ 130               		.loc 1 113 0
+ 131 003c F816      		cp r15,r24
+ 132 003e 01F4      		brne .+2
+ 133 0040 00C0      		rjmp .L4
+ 114:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef MATRIX_HAS_GHOST
+ 115:/users/hunter/downloads/tmk_core/common/keyboard.c ****             if (has_ghost_in_row(r)) {
+ 116:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 /* Keep track of whether ghosted status has changed for
+ 117:/users/hunter/downloads/tmk_core/common/keyboard.c ****                  * debugging. But don't update matrix_prev until un-ghosted, or
+ 118:/users/hunter/downloads/tmk_core/common/keyboard.c ****                  * the last key would be lost.
+ 119:/users/hunter/downloads/tmk_core/common/keyboard.c ****                  */
+ 120:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 if (debug_matrix && matrix_ghost[r] != matrix_row) {
+ 121:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     matrix_print();
+ 122:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 }
+ 123:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 matrix_ghost[r] = matrix_row;
+ 124:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 continue;
+ 125:/users/hunter/downloads/tmk_core/common/keyboard.c ****             }
+ 126:/users/hunter/downloads/tmk_core/common/keyboard.c ****             matrix_ghost[r] = matrix_row;
+ 127:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 128:/users/hunter/downloads/tmk_core/common/keyboard.c ****             if (debug_matrix) matrix_print();
+ 134               		.loc 1 128 0
+ 135 0042 8091 0000 		lds r24,debug_config
+ 136 0046 81FD      		sbrc r24,1
+ 137               		.loc 1 128 0 is_stmt 0 discriminator 1
+ 138 0048 0E94 0000 		call matrix_print
+ 139               	.LVL10:
+ 140               	.L5:
+ 141               	.LBE2:
+ 109:/users/hunter/downloads/tmk_core/common/keyboard.c ****     for (uint8_t r = 0; r < MATRIX_ROWS; r++) {
+ 142               		.loc 1 109 0 is_stmt 1
+ 143 004c 90E0      		ldi r25,0
+ 144 004e 80E0      		ldi r24,0
+ 145               	.LBB6:
+ 112:/users/hunter/downloads/tmk_core/common/keyboard.c ****         if (matrix_change) {
+ 146               		.loc 1 112 0
+ 147 0050 FE24      		eor r15,r14
+ 148               	.LVL11:
+ 149               	.LBB3:
+ 129:/users/hunter/downloads/tmk_core/common/keyboard.c ****             for (uint8_t c = 0; c < MATRIX_COLS; c++) {
+ 130:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 if (matrix_change & ((matrix_row_t)1<<c)) {
+ 150               		.loc 1 130 0
+ 151 0052 2F2D      		mov r18,r15
+ 152 0054 30E0      		ldi r19,0
+ 153               	.LVL12:
+ 154               	.L9:
+ 155 0056 482F      		mov r20,r24
+ 156               	.LVL13:
+ 157 0058 B901      		movw r22,r18
+ 158 005a 082E      		mov r0,r24
+ 159 005c 00C0      		rjmp 2f
+ 160               		1:
+ 161 005e 7595      		asr r23
+ 162 0060 6795      		ror r22
+ 163               		2:
+ 164 0062 0A94      		dec r0
+ 165 0064 02F4      		brpl 1b
+ 166 0066 60FF      		sbrs r22,0
+ 167 0068 00C0      		rjmp .L6
+ 168               	.LBB4:
+ 131:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     keyevent_t e = (keyevent_t){
+ 169               		.loc 1 131 0
+ 170 006a 8983      		std Y+1,r24
+ 171 006c BA82      		std Y+2,r11
+ 132:/users/hunter/downloads/tmk_core/common/keyboard.c ****                         .key = (keypos_t){ .row = r, .col = c },
+ 133:/users/hunter/downloads/tmk_core/common/keyboard.c ****                         .pressed = (matrix_row & ((matrix_row_t)1<<c)),
+ 172               		.loc 1 133 0
+ 173 006e 81E0      		ldi r24,lo8(1)
+ 174 0070 90E0      		ldi r25,0
+ 175               	.LVL14:
+ 176 0072 6C01      		movw r12,r24
+ 177 0074 00C0      		rjmp 2f
+ 178               		1:
+ 179 0076 CC0C      		lsl r12
+ 180 0078 DD1C      		rol r13
+ 181               		2:
+ 182 007a 4A95      		dec r20
+ 183 007c 02F4      		brpl 1b
+ 184 007e 2E2D      		mov r18,r14
+ 185 0080 30E0      		ldi r19,0
+ 186 0082 2C21      		and r18,r12
+ 187 0084 3D21      		and r19,r13
+ 188 0086 232B      		or r18,r19
+ 189 0088 01F4      		brne .L7
+ 190 008a 80E0      		ldi r24,0
+ 191               	.L7:
+ 131:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     keyevent_t e = (keyevent_t){
+ 192               		.loc 1 131 0
+ 193 008c 8B83      		std Y+3,r24
+ 134:/users/hunter/downloads/tmk_core/common/keyboard.c ****                         .time = (timer_read() | 1) /* time should not be 0 */
+ 194               		.loc 1 134 0
+ 195 008e 0E94 0000 		call timer_read
+ 196               	.LVL15:
+ 197 0092 8160      		ori r24,1
+ 131:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     keyevent_t e = (keyevent_t){
+ 198               		.loc 1 131 0
+ 199 0094 782F      		mov r23,r24
+ 200 0096 9D83      		std Y+5,r25
+ 201 0098 8C83      		std Y+4,r24
+ 135:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     };
+ 136:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     action_exec(e);
+ 202               		.loc 1 136 0
+ 203 009a 4981      		ldd r20,Y+1
+ 204 009c 5A81      		ldd r21,Y+2
+ 205 009e 6B81      		ldd r22,Y+3
+ 206 00a0 8D81      		ldd r24,Y+5
+ 207 00a2 0E94 0000 		call action_exec
+ 208               	.LVL16:
+ 137:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     hook_matrix_change(e);
+ 209               		.loc 1 137 0
+ 210 00a6 4981      		ldd r20,Y+1
+ 211 00a8 5A81      		ldd r21,Y+2
+ 212 00aa 6B81      		ldd r22,Y+3
+ 213 00ac 7C81      		ldd r23,Y+4
+ 214 00ae 8D81      		ldd r24,Y+5
+ 215 00b0 0E94 0000 		call hook_matrix_change
+ 216               	.LVL17:
+ 138:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     // record a processed key
+ 139:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     matrix_prev[r] ^= ((matrix_row_t)1<<c);
+ 217               		.loc 1 139 0
+ 218 00b4 F801      		movw r30,r16
+ 219 00b6 E050      		subi r30,lo8(-(matrix_prev.2344))
+ 220 00b8 F040      		sbci r31,hi8(-(matrix_prev.2344))
+ 221 00ba 8081      		ld r24,Z
+ 222 00bc 8C25      		eor r24,r12
+ 223 00be 8083      		st Z,r24
+ 224               	.LVL18:
+ 225               	.L8:
+ 226               	.LBE4:
+ 227               	.LBE3:
+ 228               	.LBE6:
+ 140:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     // process a key per task call
+ 141:/users/hunter/downloads/tmk_core/common/keyboard.c ****                     goto MATRIX_LOOP_END;
+ 142:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 }
+ 143:/users/hunter/downloads/tmk_core/common/keyboard.c ****             }
+ 144:/users/hunter/downloads/tmk_core/common/keyboard.c ****         }
+ 145:/users/hunter/downloads/tmk_core/common/keyboard.c ****     }
+ 146:/users/hunter/downloads/tmk_core/common/keyboard.c ****     // call with pseudo tick event when no real key event.
+ 147:/users/hunter/downloads/tmk_core/common/keyboard.c ****     action_exec(TICK);
+ 148:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 149:/users/hunter/downloads/tmk_core/common/keyboard.c **** MATRIX_LOOP_END:
+ 150:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 151:/users/hunter/downloads/tmk_core/common/keyboard.c ****     hook_keyboard_loop();
+ 229               		.loc 1 151 0
+ 230 00c0 0E94 0000 		call hook_keyboard_loop
+ 231               	.LVL19:
+ 152:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 153:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef MOUSEKEY_ENABLE
+ 154:/users/hunter/downloads/tmk_core/common/keyboard.c ****     // mousekey repeat & acceleration
+ 155:/users/hunter/downloads/tmk_core/common/keyboard.c ****     mousekey_task();
+ 156:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 157:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 158:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef PS2_MOUSE_ENABLE
+ 159:/users/hunter/downloads/tmk_core/common/keyboard.c ****     ps2_mouse_task();
+ 160:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 161:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 162:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef SERIAL_MOUSE_ENABLE
+ 163:/users/hunter/downloads/tmk_core/common/keyboard.c ****         serial_mouse_task();
+ 164:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 165:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 166:/users/hunter/downloads/tmk_core/common/keyboard.c **** #ifdef ADB_MOUSE_ENABLE
+ 167:/users/hunter/downloads/tmk_core/common/keyboard.c ****         adb_mouse_task();
+ 168:/users/hunter/downloads/tmk_core/common/keyboard.c **** #endif
+ 169:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 170:/users/hunter/downloads/tmk_core/common/keyboard.c ****     // update LED
+ 171:/users/hunter/downloads/tmk_core/common/keyboard.c ****     if (led_status != host_keyboard_leds()) {
+ 232               		.loc 1 171 0
+ 233 00c4 0E94 0000 		call host_keyboard_leds
+ 234               	.LVL20:
+ 235 00c8 9091 0000 		lds r25,led_status.2345
+ 236 00cc 8917      		cp r24,r25
+ 237 00ce 01F4      		brne .+2
+ 238 00d0 00C0      		rjmp .L3
+ 172:/users/hunter/downloads/tmk_core/common/keyboard.c ****         led_status = host_keyboard_leds();
+ 239               		.loc 1 172 0
+ 240 00d2 0E94 0000 		call host_keyboard_leds
+ 241               	.LVL21:
+ 242 00d6 8093 0000 		sts led_status.2345,r24
+ 173:/users/hunter/downloads/tmk_core/common/keyboard.c ****         if (debug_keyboard) dprintf("LED: %02X\n", led_status);
+ 243               		.loc 1 173 0
+ 244 00da 9091 0000 		lds r25,debug_config
+ 245 00de 9570      		andi r25,lo8(5)
+ 246 00e0 9530      		cpi r25,lo8(5)
+ 247 00e2 01F4      		brne .L12
+ 248               		.loc 1 173 0 is_stmt 0 discriminator 2
+ 249 00e4 1F92      		push __zero_reg__
+ 250 00e6 8F93      		push r24
+ 251 00e8 80E0      		ldi r24,lo8(__c.2362)
+ 252 00ea 90E0      		ldi r25,hi8(__c.2362)
+ 253 00ec 9F93      		push r25
+ 254 00ee 8F93      		push r24
+ 255 00f0 0E94 0000 		call __xprintf
+ 256               	.LVL22:
+ 257 00f4 0F90      		pop __tmp_reg__
+ 258 00f6 0F90      		pop __tmp_reg__
+ 259 00f8 0F90      		pop __tmp_reg__
+ 260 00fa 0F90      		pop __tmp_reg__
+ 261               	.L12:
+ 174:/users/hunter/downloads/tmk_core/common/keyboard.c ****         hook_keyboard_leds_change(led_status);
+ 262               		.loc 1 174 0 is_stmt 1
+ 263 00fc 8091 0000 		lds r24,led_status.2345
+ 264               	/* epilogue start */
+ 175:/users/hunter/downloads/tmk_core/common/keyboard.c ****     }
+ 176:/users/hunter/downloads/tmk_core/common/keyboard.c **** }
+ 265               		.loc 1 176 0
+ 266 0100 0F90      		pop __tmp_reg__
+ 267 0102 0F90      		pop __tmp_reg__
+ 268 0104 0F90      		pop __tmp_reg__
+ 269 0106 0F90      		pop __tmp_reg__
+ 270 0108 0F90      		pop __tmp_reg__
+ 271 010a DF91      		pop r29
+ 272 010c CF91      		pop r28
+ 273 010e 1F91      		pop r17
+ 274 0110 0F91      		pop r16
+ 275 0112 FF90      		pop r15
+ 276 0114 EF90      		pop r14
+ 277               	.LVL23:
+ 278 0116 DF90      		pop r13
+ 279 0118 CF90      		pop r12
+ 280 011a BF90      		pop r11
+ 174:/users/hunter/downloads/tmk_core/common/keyboard.c ****         hook_keyboard_leds_change(led_status);
+ 281               		.loc 1 174 0
+ 282 011c 0C94 0000 		jmp hook_keyboard_leds_change
+ 283               	.LVL24:
+ 284               	.L6:
+ 285 0120 0196      		adiw r24,1
+ 286               	.LVL25:
+ 287               	.LBB7:
+ 288               	.LBB5:
+ 129:/users/hunter/downloads/tmk_core/common/keyboard.c ****                 if (matrix_change & ((matrix_row_t)1<<c)) {
+ 289               		.loc 1 129 0 discriminator 2
+ 290 0122 8830      		cpi r24,8
+ 291 0124 9105      		cpc r25,__zero_reg__
+ 292 0126 01F0      		breq .+2
+ 293 0128 00C0      		rjmp .L9
+ 294               	.LVL26:
+ 295               	.L4:
+ 296 012a 0F5F      		subi r16,-1
+ 297 012c 1F4F      		sbci r17,-1
+ 298               	.LVL27:
+ 299               	.LBE5:
+ 110:/users/hunter/downloads/tmk_core/common/keyboard.c ****         matrix_row = matrix_get_row(r);
+ 300               		.loc 1 110 0
+ 301 012e 0131      		cpi r16,17
+ 302 0130 1105      		cpc r17,__zero_reg__
+ 303 0132 01F0      		breq .+2
+ 304 0134 00C0      		rjmp .L10
+ 305               	.LBE7:
+ 147:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 306               		.loc 1 147 0
+ 307 0136 8FEF      		ldi r24,lo8(-1)
+ 308 0138 8983      		std Y+1,r24
+ 309 013a 8A83      		std Y+2,r24
+ 310 013c 1B82      		std Y+3,__zero_reg__
+ 311 013e 0E94 0000 		call timer_read
+ 312               	.LVL28:
+ 313 0142 8160      		ori r24,1
+ 314 0144 782F      		mov r23,r24
+ 315 0146 9D83      		std Y+5,r25
+ 316 0148 8C83      		std Y+4,r24
+ 317 014a 4981      		ldd r20,Y+1
+ 318 014c 5A81      		ldd r21,Y+2
+ 319 014e 6B81      		ldd r22,Y+3
+ 320 0150 8D81      		ldd r24,Y+5
+ 321 0152 0E94 0000 		call action_exec
+ 322               	.LVL29:
+ 323 0156 00C0      		rjmp .L8
+ 324               	.LVL30:
+ 325               	.L3:
+ 326               	/* epilogue start */
+ 327               		.loc 1 176 0
+ 328 0158 0F90      		pop __tmp_reg__
+ 329 015a 0F90      		pop __tmp_reg__
+ 330 015c 0F90      		pop __tmp_reg__
+ 331 015e 0F90      		pop __tmp_reg__
+ 332 0160 0F90      		pop __tmp_reg__
+ 333 0162 DF91      		pop r29
+ 334 0164 CF91      		pop r28
+ 335 0166 1F91      		pop r17
+ 336 0168 0F91      		pop r16
+ 337 016a FF90      		pop r15
+ 338 016c EF90      		pop r14
+ 339               	.LVL31:
+ 340 016e DF90      		pop r13
+ 341 0170 CF90      		pop r12
+ 342 0172 BF90      		pop r11
+ 343 0174 0895      		ret
+ 344               		.cfi_endproc
+ 345               	.LFE6:
+ 347               		.section	.text.keyboard_set_leds,"ax",@progbits
+ 348               	.global	keyboard_set_leds
+ 350               	keyboard_set_leds:
+ 351               	.LFB7:
+ 177:/users/hunter/downloads/tmk_core/common/keyboard.c **** 
+ 178:/users/hunter/downloads/tmk_core/common/keyboard.c **** void keyboard_set_leds(uint8_t leds)
+ 179:/users/hunter/downloads/tmk_core/common/keyboard.c **** {
+ 352               		.loc 1 179 0
+ 353               		.cfi_startproc
+ 354               	.LVL32:
+ 355               	/* prologue: function */
+ 356               	/* frame size = 0 */
+ 357               	/* stack size = 0 */
+ 358               	.L__stack_usage = 0
+ 180:/users/hunter/downloads/tmk_core/common/keyboard.c ****     led_set(leds);
+ 359               		.loc 1 180 0
+ 360 0000 0C94 0000 		jmp led_set
+ 361               	.LVL33:
+ 362               		.cfi_endproc
+ 363               	.LFE7:
+ 365               		.section	.progmem.data.__c.2362,"a",@progbits
+ 368               	__c.2362:
+ 369 0000 4C45 443A 		.string	"LED: %02X\n"
+ 369      2025 3032 
+ 369      580A 00
+ 370               		.section	.bss.led_status.2345,"aw",@nobits
+ 373               	led_status.2345:
+ 374 0000 00        		.zero	1
+ 375               		.section	.bss.matrix_prev.2344,"aw",@nobits
+ 378               	matrix_prev.2344:
+ 379 0000 0000 0000 		.zero	17
+ 379      0000 0000 
+ 379      0000 0000 
+ 379      0000 0000 
+ 379      00
+ 380               		.text
+ 381               	.Letext0:
+ 382               		.file 2 "/opt/local/avr/include/stdint.h"
+ 383               		.file 3 "/users/hunter/downloads/tmk_core/common/keyboard.h"
+ 384               		.file 4 "/users/hunter/downloads/tmk_core/common/matrix.h"
+ 385               		.file 5 "/users/hunter/downloads/tmk_core/common/host.h"
+ 386               		.file 6 "/users/hunter/downloads/tmk_core/common/timer.h"
+ 387               		.file 7 "/users/hunter/downloads/tmk_core/common/avr/xprintf.h"
+ 388               		.file 8 "/users/hunter/downloads/tmk_core/common/debug.h"
+ 389               		.file 9 "/users/hunter/downloads/tmk_core/common/command.h"
+ 390               		.file 10 "/users/hunter/downloads/tmk_core/common/led.h"
+ 391               		.file 11 "/users/hunter/downloads/tmk_core/common/action.h"
+ 392               		.file 12 "/users/hunter/downloads/tmk_core/common/hook.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 keyboard.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:13     .text.keyboard_setup:0000000000000000 keyboard_setup
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:31     .text.keyboard_init:0000000000000000 keyboard_init
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:51     .text.keyboard_task:0000000000000000 keyboard_task
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:378    .bss.matrix_prev.2344:0000000000000000 matrix_prev.2344
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:373    .bss.led_status.2345:0000000000000000 led_status.2345
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:368    .progmem.data.__c.2362:0000000000000000 __c.2362
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccdeEZCj.s:350    .text.keyboard_set_leds:0000000000000000 keyboard_set_leds
+
+UNDEFINED SYMBOLS
+matrix_setup
+timer_init
+matrix_init
+matrix_scan
+matrix_get_row
+debug_config
+matrix_print
+timer_read
+action_exec
+hook_matrix_change
+hook_keyboard_loop
+host_keyboard_leds
+__xprintf
+hook_keyboard_leds_change
+led_set
+__do_clear_bss

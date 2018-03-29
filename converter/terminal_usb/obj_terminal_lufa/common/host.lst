@@ -1,0 +1,614 @@
+   1               		.file	"host.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.host_set_driver,"ax",@progbits
+  11               	.global	host_set_driver
+  13               	host_set_driver:
+  14               	.LFB1:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/common/host.c"
+   1:/users/hunter/downloads/tmk_core/common/host.c **** /*
+   2:/users/hunter/downloads/tmk_core/common/host.c **** Copyright 2011,2012 Jun Wako <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/common/host.c **** 
+   4:/users/hunter/downloads/tmk_core/common/host.c **** This program is free software: you can redistribute it and/or modify
+   5:/users/hunter/downloads/tmk_core/common/host.c **** it under the terms of the GNU General Public License as published by
+   6:/users/hunter/downloads/tmk_core/common/host.c **** the Free Software Foundation, either version 2 of the License, or
+   7:/users/hunter/downloads/tmk_core/common/host.c **** (at your option) any later version.
+   8:/users/hunter/downloads/tmk_core/common/host.c **** 
+   9:/users/hunter/downloads/tmk_core/common/host.c **** This program is distributed in the hope that it will be useful,
+  10:/users/hunter/downloads/tmk_core/common/host.c **** but WITHOUT ANY WARRANTY; without even the implied warranty of
+  11:/users/hunter/downloads/tmk_core/common/host.c **** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  12:/users/hunter/downloads/tmk_core/common/host.c **** GNU General Public License for more details.
+  13:/users/hunter/downloads/tmk_core/common/host.c **** 
+  14:/users/hunter/downloads/tmk_core/common/host.c **** You should have received a copy of the GNU General Public License
+  15:/users/hunter/downloads/tmk_core/common/host.c **** along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  16:/users/hunter/downloads/tmk_core/common/host.c **** */
+  17:/users/hunter/downloads/tmk_core/common/host.c **** 
+  18:/users/hunter/downloads/tmk_core/common/host.c **** #include <stdint.h>
+  19:/users/hunter/downloads/tmk_core/common/host.c **** //#include <avr/interrupt.h>
+  20:/users/hunter/downloads/tmk_core/common/host.c **** #include "keycode.h"
+  21:/users/hunter/downloads/tmk_core/common/host.c **** #include "host.h"
+  22:/users/hunter/downloads/tmk_core/common/host.c **** #include "util.h"
+  23:/users/hunter/downloads/tmk_core/common/host.c **** #include "debug.h"
+  24:/users/hunter/downloads/tmk_core/common/host.c **** 
+  25:/users/hunter/downloads/tmk_core/common/host.c **** 
+  26:/users/hunter/downloads/tmk_core/common/host.c **** #ifdef NKRO_ENABLE
+  27:/users/hunter/downloads/tmk_core/common/host.c **** bool keyboard_nkro = true;
+  28:/users/hunter/downloads/tmk_core/common/host.c **** #endif
+  29:/users/hunter/downloads/tmk_core/common/host.c **** 
+  30:/users/hunter/downloads/tmk_core/common/host.c **** static host_driver_t *driver;
+  31:/users/hunter/downloads/tmk_core/common/host.c **** static uint16_t last_system_report = 0;
+  32:/users/hunter/downloads/tmk_core/common/host.c **** static uint16_t last_consumer_report = 0;
+  33:/users/hunter/downloads/tmk_core/common/host.c **** 
+  34:/users/hunter/downloads/tmk_core/common/host.c **** 
+  35:/users/hunter/downloads/tmk_core/common/host.c **** void host_set_driver(host_driver_t *d)
+  36:/users/hunter/downloads/tmk_core/common/host.c **** {
+  16               		.loc 1 36 0
+  17               		.cfi_startproc
+  18               	.LVL0:
+  19               	/* prologue: function */
+  20               	/* frame size = 0 */
+  21               	/* stack size = 0 */
+  22               	.L__stack_usage = 0
+  37:/users/hunter/downloads/tmk_core/common/host.c ****     driver = d;
+  23               		.loc 1 37 0
+  24 0000 9093 0000 		sts driver+1,r25
+  25 0004 8093 0000 		sts driver,r24
+  26               	/* epilogue start */
+  38:/users/hunter/downloads/tmk_core/common/host.c **** }
+  27               		.loc 1 38 0
+  28 0008 0895      		ret
+  29               		.cfi_endproc
+  30               	.LFE1:
+  32               		.section	.text.host_get_driver,"ax",@progbits
+  33               	.global	host_get_driver
+  35               	host_get_driver:
+  36               	.LFB2:
+  39:/users/hunter/downloads/tmk_core/common/host.c **** 
+  40:/users/hunter/downloads/tmk_core/common/host.c **** host_driver_t *host_get_driver(void)
+  41:/users/hunter/downloads/tmk_core/common/host.c **** {
+  37               		.loc 1 41 0
+  38               		.cfi_startproc
+  39               	/* prologue: function */
+  40               	/* frame size = 0 */
+  41               	/* stack size = 0 */
+  42               	.L__stack_usage = 0
+  42:/users/hunter/downloads/tmk_core/common/host.c ****     return driver;
+  43:/users/hunter/downloads/tmk_core/common/host.c **** }
+  43               		.loc 1 43 0
+  44 0000 8091 0000 		lds r24,driver
+  45 0004 9091 0000 		lds r25,driver+1
+  46               	/* epilogue start */
+  47 0008 0895      		ret
+  48               		.cfi_endproc
+  49               	.LFE2:
+  51               		.section	.text.host_keyboard_leds,"ax",@progbits
+  52               	.global	host_keyboard_leds
+  54               	host_keyboard_leds:
+  55               	.LFB3:
+  44:/users/hunter/downloads/tmk_core/common/host.c **** 
+  45:/users/hunter/downloads/tmk_core/common/host.c **** uint8_t host_keyboard_leds(void)
+  46:/users/hunter/downloads/tmk_core/common/host.c **** {
+  56               		.loc 1 46 0
+  57               		.cfi_startproc
+  58               	/* prologue: function */
+  59               	/* frame size = 0 */
+  60               	/* stack size = 0 */
+  61               	.L__stack_usage = 0
+  47:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return 0;
+  62               		.loc 1 47 0
+  63 0000 E091 0000 		lds r30,driver
+  64 0004 F091 0000 		lds r31,driver+1
+  65 0008 3097      		sbiw r30,0
+  66 000a 01F0      		breq .L4
+  48:/users/hunter/downloads/tmk_core/common/host.c ****     return (*driver->keyboard_leds)();
+  67               		.loc 1 48 0
+  68 000c 0190      		ld __tmp_reg__,Z+
+  69 000e F081      		ld r31,Z
+  70 0010 E02D      		mov r30,__tmp_reg__
+  71 0012 0994      		ijmp
+  72               	.LVL1:
+  73               	.L4:
+  49:/users/hunter/downloads/tmk_core/common/host.c **** }
+  74               		.loc 1 49 0
+  75 0014 80E0      		ldi r24,0
+  76               	/* epilogue start */
+  77 0016 0895      		ret
+  78               		.cfi_endproc
+  79               	.LFE3:
+  81               		.section	.text.host_keyboard_send,"ax",@progbits
+  82               	.global	host_keyboard_send
+  84               	host_keyboard_send:
+  85               	.LFB4:
+  50:/users/hunter/downloads/tmk_core/common/host.c **** /* send report */
+  51:/users/hunter/downloads/tmk_core/common/host.c **** void host_keyboard_send(report_keyboard_t *report)
+  52:/users/hunter/downloads/tmk_core/common/host.c **** {
+  86               		.loc 1 52 0
+  87               		.cfi_startproc
+  88               	.LVL2:
+  89 0000 EF92      		push r14
+  90               	.LCFI0:
+  91               		.cfi_def_cfa_offset 3
+  92               		.cfi_offset 14, -2
+  93 0002 FF92      		push r15
+  94               	.LCFI1:
+  95               		.cfi_def_cfa_offset 4
+  96               		.cfi_offset 15, -3
+  97 0004 0F93      		push r16
+  98               	.LCFI2:
+  99               		.cfi_def_cfa_offset 5
+ 100               		.cfi_offset 16, -4
+ 101 0006 1F93      		push r17
+ 102               	.LCFI3:
+ 103               		.cfi_def_cfa_offset 6
+ 104               		.cfi_offset 17, -5
+ 105 0008 CF93      		push r28
+ 106               	.LCFI4:
+ 107               		.cfi_def_cfa_offset 7
+ 108               		.cfi_offset 28, -6
+ 109 000a DF93      		push r29
+ 110               	.LCFI5:
+ 111               		.cfi_def_cfa_offset 8
+ 112               		.cfi_offset 29, -7
+ 113               	/* prologue: function */
+ 114               	/* frame size = 0 */
+ 115               	/* stack size = 6 */
+ 116               	.L__stack_usage = 6
+ 117 000c 8C01      		movw r16,r24
+  53:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return;
+ 118               		.loc 1 53 0
+ 119 000e E091 0000 		lds r30,driver
+ 120 0012 F091 0000 		lds r31,driver+1
+ 121 0016 3097      		sbiw r30,0
+ 122 0018 01F0      		breq .L5
+  54:/users/hunter/downloads/tmk_core/common/host.c ****     (*driver->send_keyboard)(report);
+ 123               		.loc 1 54 0
+ 124 001a 0280      		ldd __tmp_reg__,Z+2
+ 125 001c F381      		ldd r31,Z+3
+ 126 001e E02D      		mov r30,__tmp_reg__
+ 127 0020 0995      		icall
+ 128               	.LVL3:
+  55:/users/hunter/downloads/tmk_core/common/host.c **** 
+  56:/users/hunter/downloads/tmk_core/common/host.c ****     if (debug_keyboard) {
+ 129               		.loc 1 56 0
+ 130 0022 8091 0000 		lds r24,debug_config
+ 131 0026 82FF      		sbrs r24,2
+ 132 0028 00C0      		rjmp .L5
+  57:/users/hunter/downloads/tmk_core/common/host.c ****         dprint("keyboard: ");
+ 133               		.loc 1 57 0
+ 134 002a 80FF      		sbrs r24,0
+ 135 002c 00C0      		rjmp .L9
+ 136               		.loc 1 57 0 is_stmt 0 discriminator 1
+ 137 002e 80E0      		ldi r24,lo8(__c.2021)
+ 138 0030 90E0      		ldi r25,hi8(__c.2021)
+ 139 0032 0E94 0000 		call xputs
+ 140               	.LVL4:
+ 141               	.L9:
+  52:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return;
+ 142               		.loc 1 52 0 is_stmt 1
+ 143 0036 D0E0      		ldi r29,0
+ 144 0038 C0E0      		ldi r28,0
+ 145               	.LBB2:
+  58:/users/hunter/downloads/tmk_core/common/host.c ****         for (uint8_t i = 0; i < KEYBOARD_REPORT_SIZE; i++) {
+  59:/users/hunter/downloads/tmk_core/common/host.c ****             dprintf("%02X ", report->raw[i]);
+ 146               		.loc 1 59 0
+ 147 003a 80E0      		ldi r24,lo8(__c.2024)
+ 148 003c E82E      		mov r14,r24
+ 149 003e 80E0      		ldi r24,hi8(__c.2024)
+ 150 0040 F82E      		mov r15,r24
+ 151               	.L11:
+ 152               	.LVL5:
+ 153 0042 8091 0000 		lds r24,debug_config
+ 154 0046 80FF      		sbrs r24,0
+ 155 0048 00C0      		rjmp .L10
+ 156               		.loc 1 59 0 is_stmt 0 discriminator 1
+ 157 004a F801      		movw r30,r16
+ 158 004c EC0F      		add r30,r28
+ 159 004e FD1F      		adc r31,r29
+ 160 0050 8081      		ld r24,Z
+ 161 0052 1F92      		push __zero_reg__
+ 162               	.LCFI6:
+ 163               		.cfi_def_cfa_offset 9
+ 164 0054 8F93      		push r24
+ 165               	.LCFI7:
+ 166               		.cfi_def_cfa_offset 10
+ 167 0056 FF92      		push r15
+ 168               	.LCFI8:
+ 169               		.cfi_def_cfa_offset 11
+ 170 0058 EF92      		push r14
+ 171               	.LCFI9:
+ 172               		.cfi_def_cfa_offset 12
+ 173 005a 0E94 0000 		call __xprintf
+ 174               	.LVL6:
+ 175 005e 0F90      		pop __tmp_reg__
+ 176 0060 0F90      		pop __tmp_reg__
+ 177 0062 0F90      		pop __tmp_reg__
+ 178 0064 0F90      		pop __tmp_reg__
+ 179               	.LCFI10:
+ 180               		.cfi_def_cfa_offset 8
+ 181               	.L10:
+ 182               	.LVL7:
+ 183 0066 2196      		adiw r28,1
+ 184               	.LVL8:
+  58:/users/hunter/downloads/tmk_core/common/host.c ****         for (uint8_t i = 0; i < KEYBOARD_REPORT_SIZE; i++) {
+ 185               		.loc 1 58 0 is_stmt 1 discriminator 2
+ 186 0068 C830      		cpi r28,8
+ 187 006a D105      		cpc r29,__zero_reg__
+ 188 006c 01F4      		brne .L11
+ 189               	.LBE2:
+  60:/users/hunter/downloads/tmk_core/common/host.c ****         }
+  61:/users/hunter/downloads/tmk_core/common/host.c ****         dprint("\n");
+ 190               		.loc 1 61 0
+ 191 006e 8091 0000 		lds r24,debug_config
+ 192 0072 80FF      		sbrs r24,0
+ 193 0074 00C0      		rjmp .L5
+ 194               		.loc 1 61 0 is_stmt 0 discriminator 1
+ 195 0076 80E0      		ldi r24,lo8(__c.2029)
+ 196 0078 90E0      		ldi r25,hi8(__c.2029)
+ 197               	/* epilogue start */
+  62:/users/hunter/downloads/tmk_core/common/host.c ****     }
+  63:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 198               		.loc 1 63 0 is_stmt 1 discriminator 1
+ 199 007a DF91      		pop r29
+ 200 007c CF91      		pop r28
+ 201               	.LVL9:
+ 202 007e 1F91      		pop r17
+ 203 0080 0F91      		pop r16
+ 204               	.LVL10:
+ 205 0082 FF90      		pop r15
+ 206 0084 EF90      		pop r14
+  61:/users/hunter/downloads/tmk_core/common/host.c ****     }
+ 207               		.loc 1 61 0 discriminator 1
+ 208 0086 0C94 0000 		jmp xputs
+ 209               	.LVL11:
+ 210               	.L5:
+ 211               	/* epilogue start */
+ 212               		.loc 1 63 0
+ 213 008a DF91      		pop r29
+ 214 008c CF91      		pop r28
+ 215 008e 1F91      		pop r17
+ 216 0090 0F91      		pop r16
+ 217               	.LVL12:
+ 218 0092 FF90      		pop r15
+ 219 0094 EF90      		pop r14
+ 220 0096 0895      		ret
+ 221               		.cfi_endproc
+ 222               	.LFE4:
+ 224               		.section	.text.host_mouse_send,"ax",@progbits
+ 225               	.global	host_mouse_send
+ 227               	host_mouse_send:
+ 228               	.LFB5:
+  64:/users/hunter/downloads/tmk_core/common/host.c **** 
+  65:/users/hunter/downloads/tmk_core/common/host.c **** void host_mouse_send(report_mouse_t *report)
+  66:/users/hunter/downloads/tmk_core/common/host.c **** {
+ 229               		.loc 1 66 0
+ 230               		.cfi_startproc
+ 231               	.LVL13:
+ 232               	/* prologue: function */
+ 233               	/* frame size = 0 */
+ 234               	/* stack size = 0 */
+ 235               	.L__stack_usage = 0
+  67:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return;
+ 236               		.loc 1 67 0
+ 237 0000 E091 0000 		lds r30,driver
+ 238 0004 F091 0000 		lds r31,driver+1
+ 239 0008 3097      		sbiw r30,0
+ 240 000a 01F0      		breq .L25
+  68:/users/hunter/downloads/tmk_core/common/host.c ****     (*driver->send_mouse)(report);
+ 241               		.loc 1 68 0
+ 242 000c 0480      		ldd __tmp_reg__,Z+4
+ 243 000e F581      		ldd r31,Z+5
+ 244 0010 E02D      		mov r30,__tmp_reg__
+ 245 0012 0994      		ijmp
+ 246               	.LVL14:
+ 247               	.L25:
+ 248               	/* epilogue start */
+  69:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 249               		.loc 1 69 0
+ 250 0014 0895      		ret
+ 251               		.cfi_endproc
+ 252               	.LFE5:
+ 254               		.section	.text.host_system_send,"ax",@progbits
+ 255               	.global	host_system_send
+ 257               	host_system_send:
+ 258               	.LFB6:
+  70:/users/hunter/downloads/tmk_core/common/host.c **** 
+  71:/users/hunter/downloads/tmk_core/common/host.c **** void host_system_send(uint16_t report)
+  72:/users/hunter/downloads/tmk_core/common/host.c **** {
+ 259               		.loc 1 72 0
+ 260               		.cfi_startproc
+ 261               	.LVL15:
+ 262 0000 CF93      		push r28
+ 263               	.LCFI11:
+ 264               		.cfi_def_cfa_offset 3
+ 265               		.cfi_offset 28, -2
+ 266 0002 DF93      		push r29
+ 267               	.LCFI12:
+ 268               		.cfi_def_cfa_offset 4
+ 269               		.cfi_offset 29, -3
+ 270               	/* prologue: function */
+ 271               	/* frame size = 0 */
+ 272               	/* stack size = 2 */
+ 273               	.L__stack_usage = 2
+ 274 0004 EC01      		movw r28,r24
+  73:/users/hunter/downloads/tmk_core/common/host.c ****     if (report == last_system_report) return;
+ 275               		.loc 1 73 0
+ 276 0006 8091 0000 		lds r24,last_system_report
+ 277 000a 9091 0000 		lds r25,last_system_report+1
+ 278               	.LVL16:
+ 279 000e 8C17      		cp r24,r28
+ 280 0010 9D07      		cpc r25,r29
+ 281 0012 01F0      		breq .L27
+  74:/users/hunter/downloads/tmk_core/common/host.c ****     last_system_report = report;
+ 282               		.loc 1 74 0
+ 283 0014 D093 0000 		sts last_system_report+1,r29
+ 284 0018 C093 0000 		sts last_system_report,r28
+  75:/users/hunter/downloads/tmk_core/common/host.c **** 
+  76:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return;
+ 285               		.loc 1 76 0
+ 286 001c E091 0000 		lds r30,driver
+ 287 0020 F091 0000 		lds r31,driver+1
+ 288 0024 3097      		sbiw r30,0
+ 289 0026 01F0      		breq .L27
+  77:/users/hunter/downloads/tmk_core/common/host.c ****     (*driver->send_system)(report);
+ 290               		.loc 1 77 0
+ 291 0028 0680      		ldd __tmp_reg__,Z+6
+ 292 002a F781      		ldd r31,Z+7
+ 293 002c E02D      		mov r30,__tmp_reg__
+ 294 002e CE01      		movw r24,r28
+ 295 0030 0995      		icall
+ 296               	.LVL17:
+  78:/users/hunter/downloads/tmk_core/common/host.c **** 
+  79:/users/hunter/downloads/tmk_core/common/host.c ****     if (debug_keyboard) {
+  80:/users/hunter/downloads/tmk_core/common/host.c ****         dprintf("system: %04X\n", report);
+ 297               		.loc 1 80 0
+ 298 0032 8091 0000 		lds r24,debug_config
+ 299 0036 8570      		andi r24,lo8(5)
+ 300 0038 8530      		cpi r24,lo8(5)
+ 301 003a 01F4      		brne .L27
+ 302               		.loc 1 80 0 is_stmt 0 discriminator 1
+ 303 003c DF93      		push r29
+ 304               	.LCFI13:
+ 305               		.cfi_def_cfa_offset 5
+ 306 003e CF93      		push r28
+ 307               	.LCFI14:
+ 308               		.cfi_def_cfa_offset 6
+ 309 0040 80E0      		ldi r24,lo8(__c.2037)
+ 310 0042 90E0      		ldi r25,hi8(__c.2037)
+ 311 0044 9F93      		push r25
+ 312               	.LCFI15:
+ 313               		.cfi_def_cfa_offset 7
+ 314 0046 8F93      		push r24
+ 315               	.LCFI16:
+ 316               		.cfi_def_cfa_offset 8
+ 317 0048 0E94 0000 		call __xprintf
+ 318               	.LVL18:
+ 319 004c 0F90      		pop __tmp_reg__
+ 320 004e 0F90      		pop __tmp_reg__
+ 321 0050 0F90      		pop __tmp_reg__
+ 322 0052 0F90      		pop __tmp_reg__
+ 323               	.LCFI17:
+ 324               		.cfi_def_cfa_offset 4
+ 325               	.L27:
+ 326               	/* epilogue start */
+  81:/users/hunter/downloads/tmk_core/common/host.c ****     }
+  82:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 327               		.loc 1 82 0 is_stmt 1
+ 328 0054 DF91      		pop r29
+ 329 0056 CF91      		pop r28
+ 330               	.LVL19:
+ 331 0058 0895      		ret
+ 332               		.cfi_endproc
+ 333               	.LFE6:
+ 335               		.section	.text.host_consumer_send,"ax",@progbits
+ 336               	.global	host_consumer_send
+ 338               	host_consumer_send:
+ 339               	.LFB7:
+  83:/users/hunter/downloads/tmk_core/common/host.c **** 
+  84:/users/hunter/downloads/tmk_core/common/host.c **** void host_consumer_send(uint16_t report)
+  85:/users/hunter/downloads/tmk_core/common/host.c **** {
+ 340               		.loc 1 85 0
+ 341               		.cfi_startproc
+ 342               	.LVL20:
+ 343 0000 CF93      		push r28
+ 344               	.LCFI18:
+ 345               		.cfi_def_cfa_offset 3
+ 346               		.cfi_offset 28, -2
+ 347 0002 DF93      		push r29
+ 348               	.LCFI19:
+ 349               		.cfi_def_cfa_offset 4
+ 350               		.cfi_offset 29, -3
+ 351               	/* prologue: function */
+ 352               	/* frame size = 0 */
+ 353               	/* stack size = 2 */
+ 354               	.L__stack_usage = 2
+ 355 0004 EC01      		movw r28,r24
+  86:/users/hunter/downloads/tmk_core/common/host.c ****     if (report == last_consumer_report) return;
+ 356               		.loc 1 86 0
+ 357 0006 8091 0000 		lds r24,last_consumer_report
+ 358 000a 9091 0000 		lds r25,last_consumer_report+1
+ 359               	.LVL21:
+ 360 000e 8C17      		cp r24,r28
+ 361 0010 9D07      		cpc r25,r29
+ 362 0012 01F0      		breq .L34
+  87:/users/hunter/downloads/tmk_core/common/host.c ****     last_consumer_report = report;
+ 363               		.loc 1 87 0
+ 364 0014 D093 0000 		sts last_consumer_report+1,r29
+ 365 0018 C093 0000 		sts last_consumer_report,r28
+  88:/users/hunter/downloads/tmk_core/common/host.c **** 
+  89:/users/hunter/downloads/tmk_core/common/host.c ****     if (!driver) return;
+ 366               		.loc 1 89 0
+ 367 001c E091 0000 		lds r30,driver
+ 368 0020 F091 0000 		lds r31,driver+1
+ 369 0024 3097      		sbiw r30,0
+ 370 0026 01F0      		breq .L34
+  90:/users/hunter/downloads/tmk_core/common/host.c ****     (*driver->send_consumer)(report);
+ 371               		.loc 1 90 0
+ 372 0028 0084      		ldd __tmp_reg__,Z+8
+ 373 002a F185      		ldd r31,Z+9
+ 374 002c E02D      		mov r30,__tmp_reg__
+ 375 002e CE01      		movw r24,r28
+ 376 0030 0995      		icall
+ 377               	.LVL22:
+  91:/users/hunter/downloads/tmk_core/common/host.c **** 
+  92:/users/hunter/downloads/tmk_core/common/host.c ****     if (debug_keyboard) {
+  93:/users/hunter/downloads/tmk_core/common/host.c ****         dprintf("consumer: %04X\n", report);
+ 378               		.loc 1 93 0
+ 379 0032 8091 0000 		lds r24,debug_config
+ 380 0036 8570      		andi r24,lo8(5)
+ 381 0038 8530      		cpi r24,lo8(5)
+ 382 003a 01F4      		brne .L34
+ 383               		.loc 1 93 0 is_stmt 0 discriminator 1
+ 384 003c DF93      		push r29
+ 385               	.LCFI20:
+ 386               		.cfi_def_cfa_offset 5
+ 387 003e CF93      		push r28
+ 388               	.LCFI21:
+ 389               		.cfi_def_cfa_offset 6
+ 390 0040 80E0      		ldi r24,lo8(__c.2042)
+ 391 0042 90E0      		ldi r25,hi8(__c.2042)
+ 392 0044 9F93      		push r25
+ 393               	.LCFI22:
+ 394               		.cfi_def_cfa_offset 7
+ 395 0046 8F93      		push r24
+ 396               	.LCFI23:
+ 397               		.cfi_def_cfa_offset 8
+ 398 0048 0E94 0000 		call __xprintf
+ 399               	.LVL23:
+ 400 004c 0F90      		pop __tmp_reg__
+ 401 004e 0F90      		pop __tmp_reg__
+ 402 0050 0F90      		pop __tmp_reg__
+ 403 0052 0F90      		pop __tmp_reg__
+ 404               	.LCFI24:
+ 405               		.cfi_def_cfa_offset 4
+ 406               	.L34:
+ 407               	/* epilogue start */
+  94:/users/hunter/downloads/tmk_core/common/host.c ****     }
+  95:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 408               		.loc 1 95 0 is_stmt 1
+ 409 0054 DF91      		pop r29
+ 410 0056 CF91      		pop r28
+ 411               	.LVL24:
+ 412 0058 0895      		ret
+ 413               		.cfi_endproc
+ 414               	.LFE7:
+ 416               		.section	.text.host_last_system_report,"ax",@progbits
+ 417               	.global	host_last_system_report
+ 419               	host_last_system_report:
+ 420               	.LFB8:
+  96:/users/hunter/downloads/tmk_core/common/host.c **** 
+  97:/users/hunter/downloads/tmk_core/common/host.c **** uint16_t host_last_system_report(void)
+  98:/users/hunter/downloads/tmk_core/common/host.c **** {
+ 421               		.loc 1 98 0
+ 422               		.cfi_startproc
+ 423               	/* prologue: function */
+ 424               	/* frame size = 0 */
+ 425               	/* stack size = 0 */
+ 426               	.L__stack_usage = 0
+  99:/users/hunter/downloads/tmk_core/common/host.c ****     return last_system_report;
+ 100:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 427               		.loc 1 100 0
+ 428 0000 8091 0000 		lds r24,last_system_report
+ 429 0004 9091 0000 		lds r25,last_system_report+1
+ 430               	/* epilogue start */
+ 431 0008 0895      		ret
+ 432               		.cfi_endproc
+ 433               	.LFE8:
+ 435               		.section	.text.host_last_consumer_report,"ax",@progbits
+ 436               	.global	host_last_consumer_report
+ 438               	host_last_consumer_report:
+ 439               	.LFB9:
+ 101:/users/hunter/downloads/tmk_core/common/host.c **** 
+ 102:/users/hunter/downloads/tmk_core/common/host.c **** uint16_t host_last_consumer_report(void)
+ 103:/users/hunter/downloads/tmk_core/common/host.c **** {
+ 440               		.loc 1 103 0
+ 441               		.cfi_startproc
+ 442               	/* prologue: function */
+ 443               	/* frame size = 0 */
+ 444               	/* stack size = 0 */
+ 445               	.L__stack_usage = 0
+ 104:/users/hunter/downloads/tmk_core/common/host.c ****     return last_consumer_report;
+ 105:/users/hunter/downloads/tmk_core/common/host.c **** }
+ 446               		.loc 1 105 0
+ 447 0000 8091 0000 		lds r24,last_consumer_report
+ 448 0004 9091 0000 		lds r25,last_consumer_report+1
+ 449               	/* epilogue start */
+ 450 0008 0895      		ret
+ 451               		.cfi_endproc
+ 452               	.LFE9:
+ 454               		.section	.progmem.data.__c.2042,"a",@progbits
+ 457               	__c.2042:
+ 458 0000 636F 6E73 		.string	"consumer: %04X\n"
+ 458      756D 6572 
+ 458      3A20 2530 
+ 458      3458 0A00 
+ 459               		.section	.progmem.data.__c.2037,"a",@progbits
+ 462               	__c.2037:
+ 463 0000 7379 7374 		.string	"system: %04X\n"
+ 463      656D 3A20 
+ 463      2530 3458 
+ 463      0A00 
+ 464               		.section	.progmem.data.__c.2029,"a",@progbits
+ 467               	__c.2029:
+ 468 0000 0A00      		.string	"\n"
+ 469               		.section	.progmem.data.__c.2024,"a",@progbits
+ 472               	__c.2024:
+ 473 0000 2530 3258 		.string	"%02X "
+ 473      2000 
+ 474               		.section	.progmem.data.__c.2021,"a",@progbits
+ 477               	__c.2021:
+ 478 0000 6B65 7962 		.string	"keyboard: "
+ 478      6F61 7264 
+ 478      3A20 00
+ 479               		.section	.bss.last_consumer_report,"aw",@nobits
+ 482               	last_consumer_report:
+ 483 0000 0000      		.zero	2
+ 484               		.section	.bss.last_system_report,"aw",@nobits
+ 487               	last_system_report:
+ 488 0000 0000      		.zero	2
+ 489               		.section	.bss.driver,"aw",@nobits
+ 492               	driver:
+ 493 0000 0000      		.zero	2
+ 494               		.text
+ 495               	.Letext0:
+ 496               		.file 2 "/opt/local/avr/include/stdint.h"
+ 497               		.file 3 "/users/hunter/downloads/tmk_core/common/report.h"
+ 498               		.file 4 "/users/hunter/downloads/tmk_core/common/host_driver.h"
+ 499               		.file 5 "/users/hunter/downloads/tmk_core/common/host.h"
+ 500               		.file 6 "/users/hunter/downloads/tmk_core/common/avr/xprintf.h"
+ 501               		.file 7 "/users/hunter/downloads/tmk_core/common/debug.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 host.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:13     .text.host_set_driver:0000000000000000 host_set_driver
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:492    .bss.driver:0000000000000000 driver
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:35     .text.host_get_driver:0000000000000000 host_get_driver
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:54     .text.host_keyboard_leds:0000000000000000 host_keyboard_leds
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:84     .text.host_keyboard_send:0000000000000000 host_keyboard_send
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:477    .progmem.data.__c.2021:0000000000000000 __c.2021
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:472    .progmem.data.__c.2024:0000000000000000 __c.2024
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:467    .progmem.data.__c.2029:0000000000000000 __c.2029
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:227    .text.host_mouse_send:0000000000000000 host_mouse_send
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:257    .text.host_system_send:0000000000000000 host_system_send
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:487    .bss.last_system_report:0000000000000000 last_system_report
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:462    .progmem.data.__c.2037:0000000000000000 __c.2037
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:338    .text.host_consumer_send:0000000000000000 host_consumer_send
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:482    .bss.last_consumer_report:0000000000000000 last_consumer_report
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:457    .progmem.data.__c.2042:0000000000000000 __c.2042
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:419    .text.host_last_system_report:0000000000000000 host_last_system_report
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccsxdInf.s:438    .text.host_last_consumer_report:0000000000000000 host_last_consumer_report
+
+UNDEFINED SYMBOLS
+debug_config
+xputs
+__xprintf
+__do_clear_bss

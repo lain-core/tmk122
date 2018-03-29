@@ -1,0 +1,363 @@
+   1               		.file	"matrix.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.matrix_rows,"ax",@progbits
+  11               		.weak	matrix_rows
+  13               	matrix_rows:
+  14               	.LFB1:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/common/matrix.c"
+   1:/users/hunter/downloads/tmk_core/common/matrix.c **** /*
+   2:/users/hunter/downloads/tmk_core/common/matrix.c **** Copyright 2016 Jun Wako <wakojun@gmail.com>
+   3:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+   4:/users/hunter/downloads/tmk_core/common/matrix.c **** This program is free software: you can redistribute it and/or modify
+   5:/users/hunter/downloads/tmk_core/common/matrix.c **** it under the terms of the GNU General Public License as published by
+   6:/users/hunter/downloads/tmk_core/common/matrix.c **** the Free Software Foundation, either version 2 of the License, or
+   7:/users/hunter/downloads/tmk_core/common/matrix.c **** (at your option) any later version.
+   8:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+   9:/users/hunter/downloads/tmk_core/common/matrix.c **** This program is distributed in the hope that it will be useful,
+  10:/users/hunter/downloads/tmk_core/common/matrix.c **** but WITHOUT ANY WARRANTY; without even the implied warranty of
+  11:/users/hunter/downloads/tmk_core/common/matrix.c **** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  12:/users/hunter/downloads/tmk_core/common/matrix.c **** GNU General Public License for more details.
+  13:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  14:/users/hunter/downloads/tmk_core/common/matrix.c **** You should have received a copy of the GNU General Public License
+  15:/users/hunter/downloads/tmk_core/common/matrix.c **** along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  16:/users/hunter/downloads/tmk_core/common/matrix.c **** */
+  17:/users/hunter/downloads/tmk_core/common/matrix.c **** #include "print.h"
+  18:/users/hunter/downloads/tmk_core/common/matrix.c **** #include "matrix.h"
+  19:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  20:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  21:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  22:/users/hunter/downloads/tmk_core/common/matrix.c **** uint8_t matrix_rows(void)
+  23:/users/hunter/downloads/tmk_core/common/matrix.c **** {
+  16               		.loc 1 23 0
+  17               		.cfi_startproc
+  18               	/* prologue: function */
+  19               	/* frame size = 0 */
+  20               	/* stack size = 0 */
+  21               	.L__stack_usage = 0
+  24:/users/hunter/downloads/tmk_core/common/matrix.c ****     return MATRIX_ROWS;
+  25:/users/hunter/downloads/tmk_core/common/matrix.c **** }
+  22               		.loc 1 25 0
+  23 0000 81E1      		ldi r24,lo8(17)
+  24               	/* epilogue start */
+  25 0002 0895      		ret
+  26               		.cfi_endproc
+  27               	.LFE1:
+  29               		.section	.text.matrix_cols,"ax",@progbits
+  30               		.weak	matrix_cols
+  32               	matrix_cols:
+  33               	.LFB2:
+  26:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  27:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  28:/users/hunter/downloads/tmk_core/common/matrix.c **** uint8_t matrix_cols(void)
+  29:/users/hunter/downloads/tmk_core/common/matrix.c **** {
+  34               		.loc 1 29 0
+  35               		.cfi_startproc
+  36               	/* prologue: function */
+  37               	/* frame size = 0 */
+  38               	/* stack size = 0 */
+  39               	.L__stack_usage = 0
+  30:/users/hunter/downloads/tmk_core/common/matrix.c ****     return MATRIX_COLS;
+  31:/users/hunter/downloads/tmk_core/common/matrix.c **** }
+  40               		.loc 1 31 0
+  41 0000 88E0      		ldi r24,lo8(8)
+  42               	/* epilogue start */
+  43 0002 0895      		ret
+  44               		.cfi_endproc
+  45               	.LFE2:
+  47               		.section	.text.matrix_clear,"ax",@progbits
+  48               		.weak	matrix_clear
+  50               	matrix_clear:
+  51               	.LFB10:
+  52               		.cfi_startproc
+  53               	/* prologue: function */
+  54               	/* frame size = 0 */
+  55               	/* stack size = 0 */
+  56               	.L__stack_usage = 0
+  57               	/* epilogue start */
+  58 0000 0895      		ret
+  59               		.cfi_endproc
+  60               	.LFE10:
+  62               		.section	.text.matrix_setup,"ax",@progbits
+  63               		.weak	matrix_setup
+  65               	matrix_setup:
+  66               	.LFB4:
+  32:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  33:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  34:/users/hunter/downloads/tmk_core/common/matrix.c **** void matrix_clear(void)
+  35:/users/hunter/downloads/tmk_core/common/matrix.c **** {
+  36:/users/hunter/downloads/tmk_core/common/matrix.c **** }
+  37:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  38:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  39:/users/hunter/downloads/tmk_core/common/matrix.c **** void matrix_setup(void) {}
+  67               		.loc 1 39 0
+  68               		.cfi_startproc
+  69               	/* prologue: function */
+  70               	/* frame size = 0 */
+  71               	/* stack size = 0 */
+  72               	.L__stack_usage = 0
+  73               	/* epilogue start */
+  74               		.loc 1 39 0
+  75 0000 0895      		ret
+  76               		.cfi_endproc
+  77               	.LFE4:
+  79               		.section	.text.matrix_is_on,"ax",@progbits
+  80               		.weak	matrix_is_on
+  82               	matrix_is_on:
+  83               	.LFB5:
+  40:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  41:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  42:/users/hunter/downloads/tmk_core/common/matrix.c **** bool matrix_is_on(uint8_t row, uint8_t col)
+  43:/users/hunter/downloads/tmk_core/common/matrix.c **** {
+  84               		.loc 1 43 0
+  85               		.cfi_startproc
+  86               	.LVL0:
+  87 0000 CF93      		push r28
+  88               	.LCFI0:
+  89               		.cfi_def_cfa_offset 3
+  90               		.cfi_offset 28, -2
+  91               	/* prologue: function */
+  92               	/* frame size = 0 */
+  93               	/* stack size = 1 */
+  94               	.L__stack_usage = 1
+  95 0002 C62F      		mov r28,r22
+  44:/users/hunter/downloads/tmk_core/common/matrix.c ****     return (matrix_get_row(row) & (1<<col));
+  96               		.loc 1 44 0
+  97 0004 0E94 0000 		call matrix_get_row
+  98               	.LVL1:
+  99 0008 21E0      		ldi r18,lo8(1)
+ 100 000a 30E0      		ldi r19,0
+ 101 000c 00C0      		rjmp 2f
+ 102               		1:
+ 103 000e 220F      		lsl r18
+ 104 0010 331F      		rol r19
+ 105               		2:
+ 106 0012 CA95      		dec r28
+ 107 0014 02F4      		brpl 1b
+ 108 0016 90E0      		ldi r25,0
+ 109 0018 2823      		and r18,r24
+ 110 001a 3923      		and r19,r25
+ 111 001c 81E0      		ldi r24,lo8(1)
+ 112 001e 232B      		or r18,r19
+ 113 0020 01F4      		brne .L6
+ 114 0022 80E0      		ldi r24,0
+ 115               	.L6:
+ 116               	/* epilogue start */
+  45:/users/hunter/downloads/tmk_core/common/matrix.c **** }
+ 117               		.loc 1 45 0
+ 118 0024 CF91      		pop r28
+ 119               	.LVL2:
+ 120 0026 0895      		ret
+ 121               		.cfi_endproc
+ 122               	.LFE5:
+ 124               		.section	.rodata.matrix_print.str1.1,"aMS",@progbits,1
+ 125               	.LC0:
+ 126 0000 00        		.string	""
+ 127               		.section	.text.matrix_print,"ax",@progbits
+ 128               		.weak	matrix_print
+ 130               	matrix_print:
+ 131               	.LFB6:
+  46:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  47:/users/hunter/downloads/tmk_core/common/matrix.c **** __attribute__ ((weak))
+  48:/users/hunter/downloads/tmk_core/common/matrix.c **** void matrix_print(void)
+  49:/users/hunter/downloads/tmk_core/common/matrix.c **** {
+ 132               		.loc 1 49 0
+ 133               		.cfi_startproc
+ 134 0000 EF92      		push r14
+ 135               	.LCFI1:
+ 136               		.cfi_def_cfa_offset 3
+ 137               		.cfi_offset 14, -2
+ 138 0002 FF92      		push r15
+ 139               	.LCFI2:
+ 140               		.cfi_def_cfa_offset 4
+ 141               		.cfi_offset 15, -3
+ 142 0004 0F93      		push r16
+ 143               	.LCFI3:
+ 144               		.cfi_def_cfa_offset 5
+ 145               		.cfi_offset 16, -4
+ 146 0006 1F93      		push r17
+ 147               	.LCFI4:
+ 148               		.cfi_def_cfa_offset 6
+ 149               		.cfi_offset 17, -5
+ 150 0008 CF93      		push r28
+ 151               	.LCFI5:
+ 152               		.cfi_def_cfa_offset 7
+ 153               		.cfi_offset 28, -6
+ 154 000a DF93      		push r29
+ 155               	.LCFI6:
+ 156               		.cfi_def_cfa_offset 8
+ 157               		.cfi_offset 29, -7
+ 158               	/* prologue: function */
+ 159               	/* frame size = 0 */
+ 160               	/* stack size = 6 */
+ 161               	.L__stack_usage = 6
+  50:/users/hunter/downloads/tmk_core/common/matrix.c **** #if (MATRIX_COLS <= 8)
+  51:/users/hunter/downloads/tmk_core/common/matrix.c ****     print("r/c 01234567\n");
+ 162               		.loc 1 51 0
+ 163 000c 80E0      		ldi r24,lo8(__c.1744)
+ 164 000e 90E0      		ldi r25,hi8(__c.1744)
+ 165 0010 0E94 0000 		call xputs
+ 166 0014 D0E0      		ldi r29,0
+ 167 0016 C0E0      		ldi r28,0
+ 168               	.LBB2:
+  52:/users/hunter/downloads/tmk_core/common/matrix.c **** #elif (MATRIX_COLS <= 16)
+  53:/users/hunter/downloads/tmk_core/common/matrix.c ****     print("r/c 0123456789ABCDEF\n");
+  54:/users/hunter/downloads/tmk_core/common/matrix.c **** #elif (MATRIX_COLS <= 32)
+  55:/users/hunter/downloads/tmk_core/common/matrix.c ****     print("r/c 0123456789ABCDEF0123456789ABCDEF\n");
+  56:/users/hunter/downloads/tmk_core/common/matrix.c **** #endif
+  57:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  58:/users/hunter/downloads/tmk_core/common/matrix.c ****     for (uint8_t row = 0; row < MATRIX_ROWS; row++) {
+  59:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+  60:/users/hunter/downloads/tmk_core/common/matrix.c **** #if (MATRIX_COLS <= 8)
+  61:/users/hunter/downloads/tmk_core/common/matrix.c ****         xprintf("%02X: %08b%s\n", row, bitrev(matrix_get_row(row)),
+ 169               		.loc 1 61 0
+ 170 0018 80E0      		ldi r24,lo8(.LC0)
+ 171 001a E82E      		mov r14,r24
+ 172 001c 80E0      		ldi r24,hi8(.LC0)
+ 173 001e F82E      		mov r15,r24
+ 174 0020 00E0      		ldi r16,lo8(__c.1747)
+ 175 0022 10E0      		ldi r17,hi8(__c.1747)
+ 176               	.L8:
+ 177               		.loc 1 61 0 is_stmt 0 discriminator 3
+ 178 0024 8C2F      		mov r24,r28
+ 179 0026 0E94 0000 		call matrix_get_row
+ 180 002a 0E94 0000 		call bitrev
+ 181 002e FF92      		push r15
+ 182               	.LCFI7:
+ 183               		.cfi_def_cfa_offset 9
+ 184 0030 EF92      		push r14
+ 185               	.LCFI8:
+ 186               		.cfi_def_cfa_offset 10
+ 187 0032 1F92      		push __zero_reg__
+ 188               	.LCFI9:
+ 189               		.cfi_def_cfa_offset 11
+ 190 0034 8F93      		push r24
+ 191               	.LCFI10:
+ 192               		.cfi_def_cfa_offset 12
+ 193 0036 DF93      		push r29
+ 194               	.LCFI11:
+ 195               		.cfi_def_cfa_offset 13
+ 196 0038 CF93      		push r28
+ 197               	.LCFI12:
+ 198               		.cfi_def_cfa_offset 14
+ 199 003a 1F93      		push r17
+ 200               	.LCFI13:
+ 201               		.cfi_def_cfa_offset 15
+ 202 003c 0F93      		push r16
+ 203               	.LCFI14:
+ 204               		.cfi_def_cfa_offset 16
+ 205 003e 0E94 0000 		call __xprintf
+ 206 0042 2196      		adiw r28,1
+  58:/users/hunter/downloads/tmk_core/common/matrix.c **** 
+ 207               		.loc 1 58 0 is_stmt 1 discriminator 3
+ 208 0044 8DB7      		in r24,__SP_L__
+ 209 0046 9EB7      		in r25,__SP_H__
+ 210 0048 0896      		adiw r24,8
+ 211 004a 0FB6      		in __tmp_reg__,__SREG__
+ 212 004c F894      		cli
+ 213 004e 9EBF      		out __SP_H__,r25
+ 214 0050 0FBE      		out __SREG__,__tmp_reg__
+ 215 0052 8DBF      		out __SP_L__,r24
+ 216               	.LCFI15:
+ 217               		.cfi_def_cfa_offset 8
+ 218 0054 C131      		cpi r28,17
+ 219 0056 D105      		cpc r29,__zero_reg__
+ 220 0058 01F4      		brne .L8
+ 221               	/* epilogue start */
+ 222               	.LBE2:
+  62:/users/hunter/downloads/tmk_core/common/matrix.c **** #elif (MATRIX_COLS <= 16)
+  63:/users/hunter/downloads/tmk_core/common/matrix.c ****         xprintf("%02X: %016b%s\n", row, bitrev16(matrix_get_row(row)),
+  64:/users/hunter/downloads/tmk_core/common/matrix.c **** #elif (MATRIX_COLS <= 32)
+  65:/users/hunter/downloads/tmk_core/common/matrix.c ****         xprintf("%02X: %032b%s\n", row, bitrev32(matrix_get_row(row)),
+  66:/users/hunter/downloads/tmk_core/common/matrix.c **** #endif
+  67:/users/hunter/downloads/tmk_core/common/matrix.c **** #ifdef MATRIX_HAS_GHOST
+  68:/users/hunter/downloads/tmk_core/common/matrix.c ****         matrix_has_ghost_in_row(row) ?  " <ghost" : ""
+  69:/users/hunter/downloads/tmk_core/common/matrix.c **** #else
+  70:/users/hunter/downloads/tmk_core/common/matrix.c ****         ""
+  71:/users/hunter/downloads/tmk_core/common/matrix.c **** #endif
+  72:/users/hunter/downloads/tmk_core/common/matrix.c ****         );
+  73:/users/hunter/downloads/tmk_core/common/matrix.c ****     }
+  74:/users/hunter/downloads/tmk_core/common/matrix.c **** }
+ 223               		.loc 1 74 0
+ 224 005a DF91      		pop r29
+ 225 005c CF91      		pop r28
+ 226 005e 1F91      		pop r17
+ 227 0060 0F91      		pop r16
+ 228 0062 FF90      		pop r15
+ 229 0064 EF90      		pop r14
+ 230 0066 0895      		ret
+ 231               		.cfi_endproc
+ 232               	.LFE6:
+ 234               		.section	.text.matrix_power_up,"ax",@progbits
+ 235               		.weak	matrix_power_up
+ 237               	matrix_power_up:
+ 238               	.LFB12:
+ 239               		.cfi_startproc
+ 240               	/* prologue: function */
+ 241               	/* frame size = 0 */
+ 242               	/* stack size = 0 */
+ 243               	.L__stack_usage = 0
+ 244               	/* epilogue start */
+ 245 0000 0895      		ret
+ 246               		.cfi_endproc
+ 247               	.LFE12:
+ 249               		.section	.text.matrix_power_down,"ax",@progbits
+ 250               		.weak	matrix_power_down
+ 252               	matrix_power_down:
+ 253               	.LFB14:
+ 254               		.cfi_startproc
+ 255               	/* prologue: function */
+ 256               	/* frame size = 0 */
+ 257               	/* stack size = 0 */
+ 258               	.L__stack_usage = 0
+ 259               	/* epilogue start */
+ 260 0000 0895      		ret
+ 261               		.cfi_endproc
+ 262               	.LFE14:
+ 264               		.section	.progmem.data.__c.1747,"a",@progbits
+ 267               	__c.1747:
+ 268 0000 2530 3258 		.string	"%02X: %08b%s\n"
+ 268      3A20 2530 
+ 268      3862 2573 
+ 268      0A00 
+ 269               		.section	.progmem.data.__c.1744,"a",@progbits
+ 272               	__c.1744:
+ 273 0000 722F 6320 		.string	"r/c 01234567\n"
+ 273      3031 3233 
+ 273      3435 3637 
+ 273      0A00 
+ 274               		.text
+ 275               	.Letext0:
+ 276               		.file 2 "/opt/local/avr/include/stdint.h"
+ 277               		.file 3 "/users/hunter/downloads/tmk_core/common/avr/xprintf.h"
+ 278               		.file 4 "/users/hunter/downloads/tmk_core/common/matrix.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 matrix.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:13     .text.matrix_rows:0000000000000000 matrix_rows
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:32     .text.matrix_cols:0000000000000000 matrix_cols
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:50     .text.matrix_clear:0000000000000000 matrix_clear
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:65     .text.matrix_setup:0000000000000000 matrix_setup
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:82     .text.matrix_is_on:0000000000000000 matrix_is_on
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:130    .text.matrix_print:0000000000000000 matrix_print
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:272    .progmem.data.__c.1744:0000000000000000 __c.1744
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:267    .progmem.data.__c.1747:0000000000000000 __c.1747
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:237    .text.matrix_power_up:0000000000000000 matrix_power_up
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccjMzgN2.s:252    .text.matrix_power_down:0000000000000000 matrix_power_down
+
+UNDEFINED SYMBOLS
+matrix_get_row
+xputs
+bitrev
+__xprintf
+__do_copy_data

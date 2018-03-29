@@ -1,0 +1,954 @@
+   1               		.file	"suspend.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.suspend_idle,"ax",@progbits
+  11               	.global	suspend_idle
+  13               	suspend_idle:
+  14               	.LFB111:
+  15               		.file 1 "/users/hunter/downloads/tmk_core/common/avr/suspend.c"
+   1:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include <stdbool.h>
+   2:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include <avr/sleep.h>
+   3:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include <avr/wdt.h>
+   4:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include <avr/interrupt.h>
+   5:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "matrix.h"
+   6:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "action.h"
+   7:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "backlight.h"
+   8:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "suspend_avr.h"
+   9:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "suspend.h"
+  10:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "timer.h"
+  11:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #ifdef PROTOCOL_LUFA
+  12:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #include "lufa.h"
+  13:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #endif
+  14:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  15:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  16:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #define wdt_intr_enable(value)   \
+  17:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** __asm__ __volatile__ (  \
+  18:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "in __tmp_reg__,__SREG__" "\n\t"    \
+  19:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "cli" "\n\t"    \
+  20:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "wdr" "\n\t"    \
+  21:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "sts %0,%1" "\n\t"  \
+  22:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "out __SREG__,__tmp_reg__" "\n\t"   \
+  23:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "sts %0,%2" "\n\t" \
+  24:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     : /* no outputs */  \
+  25:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     : "M" (_SFR_MEM_ADDR(_WD_CONTROL_REG)), \
+  26:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "r" (_BV(_WD_CHANGE_BIT) | _BV(WDE)), \
+  27:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     "r" ((uint8_t) ((value & 0x08 ? _WD_PS3_MASK : 0x00) | \
+  28:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****         _BV(WDIE) | (value & 0x07)) ) \
+  29:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     : "r0"  \
+  30:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** )
+  31:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  32:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  33:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** /* Power down MCU with watchdog timer
+  34:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  * wdto: watchdog timer timeout defined in <avr/wdt.h>
+  35:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_15MS
+  36:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_30MS
+  37:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_60MS
+  38:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_120MS
+  39:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_250MS
+  40:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_500MS
+  41:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_1S
+  42:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_2S
+  43:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_4S
+  44:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  *          WDTO_8S
+  45:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****  */
+  46:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** static uint8_t wdt_timeout = 0;
+  47:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** static void power_down(uint8_t wdto)
+  48:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+  49:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #ifdef PROTOCOL_LUFA
+  50:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     if (USB_DeviceState == DEVICE_STATE_Configured) return;
+  51:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #endif
+  52:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     wdt_timeout = wdto;
+  53:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  54:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // Watchdog Interrupt Mode
+  55:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     wdt_intr_enable(wdto);
+  56:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  57:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // TODO: more power saving
+  58:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // See PicoPower application note
+  59:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // - I/O port input with pullup
+  60:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // - prescale clock
+  61:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // - BOD disable
+  62:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // - Power Reduction Register PRR
+  63:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  64:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_enable();
+  65:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sei();
+  66:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_cpu();
+  67:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_disable();
+  68:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  69:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // Disable watchdog after sleep
+  70:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     wdt_disable();
+  71:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+  72:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  73:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** static void standby(void)
+  74:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+  75:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     set_sleep_mode(SLEEP_MODE_STANDBY);
+  76:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_enable();
+  77:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sei();
+  78:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_cpu();
+  79:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_disable();
+  80:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+  81:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  82:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** static void idle(void)
+  83:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+  84:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     set_sleep_mode(SLEEP_MODE_IDLE);
+  85:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_enable();
+  86:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sei();
+  87:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_cpu();
+  88:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_disable();
+  89:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+  90:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  91:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  92:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** void suspend_idle(uint8_t time)
+  93:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+  16               		.loc 1 93 0
+  17               		.cfi_startproc
+  18               	.LVL0:
+  19               	/* prologue: function */
+  20               	/* frame size = 0 */
+  21               	/* stack size = 0 */
+  22               	.L__stack_usage = 0
+  23               	.LBB9:
+  24               	.LBB10:
+  84:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_enable();
+  25               		.loc 1 84 0
+  26 0000 83B7      		in r24,0x33
+  27               	.LVL1:
+  28 0002 817F      		andi r24,lo8(-15)
+  29 0004 83BF      		out 0x33,r24
+  85:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sei();
+  30               		.loc 1 85 0
+  31 0006 83B7      		in r24,0x33
+  32 0008 8160      		ori r24,lo8(1)
+  33 000a 83BF      		out 0x33,r24
+  86:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_cpu();
+  34               		.loc 1 86 0
+  35               	/* #APP */
+  36               	 ;  86 "/users/hunter/downloads/tmk_core/common/avr/suspend.c" 1
+  37 000c 7894      		sei
+  38               	 ;  0 "" 2
+  87:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_disable();
+  39               		.loc 1 87 0
+  40               	 ;  87 "/users/hunter/downloads/tmk_core/common/avr/suspend.c" 1
+  41 000e 8895      		sleep
+  42               		
+  43               	 ;  0 "" 2
+  88:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+  44               		.loc 1 88 0
+  45               	/* #NOAPP */
+  46 0010 83B7      		in r24,0x33
+  47 0012 8E7F      		andi r24,lo8(-2)
+  48 0014 83BF      		out 0x33,r24
+  49               	/* epilogue start */
+  50               	.LBE10:
+  51               	.LBE9:
+  94:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     idle();
+  95:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+  52               		.loc 1 95 0
+  53 0016 0895      		ret
+  54               		.cfi_endproc
+  55               	.LFE111:
+  57               		.section	.text.suspend_power_down,"ax",@progbits
+  58               	.global	suspend_power_down
+  60               	suspend_power_down:
+  61               	.LFB112:
+  96:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  97:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** void suspend_power_down(void)
+  98:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+  62               		.loc 1 98 0
+  63               		.cfi_startproc
+  64               	/* prologue: function */
+  65               	/* frame size = 0 */
+  66               	/* stack size = 0 */
+  67               	.L__stack_usage = 0
+  68               	.LVL2:
+  69               	.LBB15:
+  70               	.LBB16:
+  50:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #endif
+  71               		.loc 1 50 0
+  72 0000 8091 0000 		lds r24,USB_DeviceState
+  73 0004 8430      		cpi r24,lo8(4)
+  74 0006 01F0      		breq .L2
+  52:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  75               		.loc 1 52 0
+  76 0008 1092 0000 		sts wdt_timeout,__zero_reg__
+  55:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+  77               		.loc 1 55 0
+  78 000c 88E1      		ldi r24,lo8(24)
+  79 000e 90E0      		ldi r25,0
+  80 0010 20E4      		ldi r18,lo8(64)
+  81               	/* #APP */
+  82               	 ;  55 "/users/hunter/downloads/tmk_core/common/avr/suspend.c" 1
+  83 0012 0FB6      		in __tmp_reg__,__SREG__
+  84 0014 F894      		cli
+  85 0016 A895      		wdr
+  86 0018 8093 6000 		sts 96,r24
+  87 001c 0FBE      		out __SREG__,__tmp_reg__
+  88 001e 2093 6000 		sts 96,r18
+  89               		
+  90               	 ;  0 "" 2
+  63:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_enable();
+  91               		.loc 1 63 0
+  92               	/* #NOAPP */
+  93 0022 83B7      		in r24,0x33
+  94 0024 817F      		andi r24,lo8(-15)
+  95 0026 8460      		ori r24,lo8(4)
+  96 0028 83BF      		out 0x33,r24
+  64:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sei();
+  97               		.loc 1 64 0
+  98 002a 83B7      		in r24,0x33
+  99 002c 8160      		ori r24,lo8(1)
+ 100 002e 83BF      		out 0x33,r24
+  65:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_cpu();
+ 101               		.loc 1 65 0
+ 102               	/* #APP */
+ 103               	 ;  65 "/users/hunter/downloads/tmk_core/common/avr/suspend.c" 1
+ 104 0030 7894      		sei
+ 105               	 ;  0 "" 2
+  66:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     sleep_disable();
+ 106               		.loc 1 66 0
+ 107               	 ;  66 "/users/hunter/downloads/tmk_core/common/avr/suspend.c" 1
+ 108 0032 8895      		sleep
+ 109               		
+ 110               	 ;  0 "" 2
+  67:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+ 111               		.loc 1 67 0
+ 112               	/* #NOAPP */
+ 113 0034 83B7      		in r24,0x33
+ 114 0036 8E7F      		andi r24,lo8(-2)
+ 115 0038 83BF      		out 0x33,r24
+ 116               	.LBB17:
+ 117               	.LBB18:
+ 118               		.file 2 "/opt/local/avr/include/avr/wdt.h"
+   1:/opt/local/avr/include/avr/wdt.h **** /* Copyright (c) 2002, 2004 Marek Michalkiewicz
+   2:/opt/local/avr/include/avr/wdt.h ****    Copyright (c) 2005, 2006, 2007 Eric B. Weddington
+   3:/opt/local/avr/include/avr/wdt.h ****    All rights reserved.
+   4:/opt/local/avr/include/avr/wdt.h **** 
+   5:/opt/local/avr/include/avr/wdt.h ****    Redistribution and use in source and binary forms, with or without
+   6:/opt/local/avr/include/avr/wdt.h ****    modification, are permitted provided that the following conditions are met:
+   7:/opt/local/avr/include/avr/wdt.h **** 
+   8:/opt/local/avr/include/avr/wdt.h ****    * Redistributions of source code must retain the above copyright
+   9:/opt/local/avr/include/avr/wdt.h ****      notice, this list of conditions and the following disclaimer.
+  10:/opt/local/avr/include/avr/wdt.h **** 
+  11:/opt/local/avr/include/avr/wdt.h ****    * Redistributions in binary form must reproduce the above copyright
+  12:/opt/local/avr/include/avr/wdt.h ****      notice, this list of conditions and the following disclaimer in
+  13:/opt/local/avr/include/avr/wdt.h ****      the documentation and/or other materials provided with the
+  14:/opt/local/avr/include/avr/wdt.h ****      distribution.
+  15:/opt/local/avr/include/avr/wdt.h **** 
+  16:/opt/local/avr/include/avr/wdt.h ****    * Neither the name of the copyright holders nor the names of
+  17:/opt/local/avr/include/avr/wdt.h ****      contributors may be used to endorse or promote products derived
+  18:/opt/local/avr/include/avr/wdt.h ****      from this software without specific prior written permission.
+  19:/opt/local/avr/include/avr/wdt.h **** 
+  20:/opt/local/avr/include/avr/wdt.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  21:/opt/local/avr/include/avr/wdt.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  22:/opt/local/avr/include/avr/wdt.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  23:/opt/local/avr/include/avr/wdt.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  24:/opt/local/avr/include/avr/wdt.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  25:/opt/local/avr/include/avr/wdt.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  26:/opt/local/avr/include/avr/wdt.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  27:/opt/local/avr/include/avr/wdt.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  28:/opt/local/avr/include/avr/wdt.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  29:/opt/local/avr/include/avr/wdt.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  30:/opt/local/avr/include/avr/wdt.h ****   POSSIBILITY OF SUCH DAMAGE. */
+  31:/opt/local/avr/include/avr/wdt.h **** 
+  32:/opt/local/avr/include/avr/wdt.h **** /* $Id: wdt.h 2503 2016-02-07 22:59:47Z joerg_wunsch $ */
+  33:/opt/local/avr/include/avr/wdt.h **** 
+  34:/opt/local/avr/include/avr/wdt.h **** /*
+  35:/opt/local/avr/include/avr/wdt.h ****    avr/wdt.h - macros for AVR watchdog timer
+  36:/opt/local/avr/include/avr/wdt.h ****  */
+  37:/opt/local/avr/include/avr/wdt.h **** 
+  38:/opt/local/avr/include/avr/wdt.h **** #ifndef _AVR_WDT_H_
+  39:/opt/local/avr/include/avr/wdt.h **** #define _AVR_WDT_H_
+  40:/opt/local/avr/include/avr/wdt.h **** 
+  41:/opt/local/avr/include/avr/wdt.h **** #include <avr/io.h>
+  42:/opt/local/avr/include/avr/wdt.h **** #include <stdint.h>
+  43:/opt/local/avr/include/avr/wdt.h **** 
+  44:/opt/local/avr/include/avr/wdt.h **** /** \file */
+  45:/opt/local/avr/include/avr/wdt.h **** /** \defgroup avr_watchdog <avr/wdt.h>: Watchdog timer handling
+  46:/opt/local/avr/include/avr/wdt.h ****     \code #include <avr/wdt.h> \endcode
+  47:/opt/local/avr/include/avr/wdt.h **** 
+  48:/opt/local/avr/include/avr/wdt.h ****     This header file declares the interface to some inline macros
+  49:/opt/local/avr/include/avr/wdt.h ****     handling the watchdog timer present in many AVR devices.  In order
+  50:/opt/local/avr/include/avr/wdt.h ****     to prevent the watchdog timer configuration from being
+  51:/opt/local/avr/include/avr/wdt.h ****     accidentally altered by a crashing application, a special timed
+  52:/opt/local/avr/include/avr/wdt.h ****     sequence is required in order to change it.  The macros within
+  53:/opt/local/avr/include/avr/wdt.h ****     this header file handle the required sequence automatically
+  54:/opt/local/avr/include/avr/wdt.h ****     before changing any value.  Interrupts will be disabled during
+  55:/opt/local/avr/include/avr/wdt.h ****     the manipulation.
+  56:/opt/local/avr/include/avr/wdt.h **** 
+  57:/opt/local/avr/include/avr/wdt.h ****     \note Depending on the fuse configuration of the particular
+  58:/opt/local/avr/include/avr/wdt.h ****     device, further restrictions might apply, in particular it might
+  59:/opt/local/avr/include/avr/wdt.h ****     be disallowed to turn off the watchdog timer.
+  60:/opt/local/avr/include/avr/wdt.h **** 
+  61:/opt/local/avr/include/avr/wdt.h ****     Note that for newer devices (ATmega88 and newer, effectively any
+  62:/opt/local/avr/include/avr/wdt.h ****     AVR that has the option to also generate interrupts), the watchdog
+  63:/opt/local/avr/include/avr/wdt.h ****     timer remains active even after a system reset (except a power-on
+  64:/opt/local/avr/include/avr/wdt.h ****     condition), using the fastest prescaler value (approximately 15
+  65:/opt/local/avr/include/avr/wdt.h ****     ms).  It is therefore required to turn off the watchdog early
+  66:/opt/local/avr/include/avr/wdt.h ****     during program startup, the datasheet recommends a sequence like
+  67:/opt/local/avr/include/avr/wdt.h ****     the following:
+  68:/opt/local/avr/include/avr/wdt.h **** 
+  69:/opt/local/avr/include/avr/wdt.h ****     \code
+  70:/opt/local/avr/include/avr/wdt.h ****     #include <stdint.h>
+  71:/opt/local/avr/include/avr/wdt.h ****     #include <avr/wdt.h>
+  72:/opt/local/avr/include/avr/wdt.h **** 
+  73:/opt/local/avr/include/avr/wdt.h ****     uint8_t mcusr_mirror __attribute__ ((section (".noinit")));
+  74:/opt/local/avr/include/avr/wdt.h **** 
+  75:/opt/local/avr/include/avr/wdt.h ****     void get_mcusr(void) \
+  76:/opt/local/avr/include/avr/wdt.h ****       __attribute__((naked)) \
+  77:/opt/local/avr/include/avr/wdt.h ****       __attribute__((section(".init3")));
+  78:/opt/local/avr/include/avr/wdt.h ****     void get_mcusr(void)
+  79:/opt/local/avr/include/avr/wdt.h ****     {
+  80:/opt/local/avr/include/avr/wdt.h ****       mcusr_mirror = MCUSR;
+  81:/opt/local/avr/include/avr/wdt.h ****       MCUSR = 0;
+  82:/opt/local/avr/include/avr/wdt.h ****       wdt_disable();
+  83:/opt/local/avr/include/avr/wdt.h ****     }
+  84:/opt/local/avr/include/avr/wdt.h ****     \endcode
+  85:/opt/local/avr/include/avr/wdt.h **** 
+  86:/opt/local/avr/include/avr/wdt.h ****     Saving the value of MCUSR in \c mcusr_mirror is only needed if the
+  87:/opt/local/avr/include/avr/wdt.h ****     application later wants to examine the reset source, but in particular, 
+  88:/opt/local/avr/include/avr/wdt.h ****     clearing the watchdog reset flag before disabling the
+  89:/opt/local/avr/include/avr/wdt.h ****     watchdog is required, according to the datasheet.
+  90:/opt/local/avr/include/avr/wdt.h **** */
+  91:/opt/local/avr/include/avr/wdt.h **** 
+  92:/opt/local/avr/include/avr/wdt.h **** /**
+  93:/opt/local/avr/include/avr/wdt.h ****    \ingroup avr_watchdog
+  94:/opt/local/avr/include/avr/wdt.h ****    Reset the watchdog timer.  When the watchdog timer is enabled,
+  95:/opt/local/avr/include/avr/wdt.h ****    a call to this instruction is required before the timer expires,
+  96:/opt/local/avr/include/avr/wdt.h ****    otherwise a watchdog-initiated device reset will occur. 
+  97:/opt/local/avr/include/avr/wdt.h **** */
+  98:/opt/local/avr/include/avr/wdt.h **** 
+  99:/opt/local/avr/include/avr/wdt.h **** #define wdt_reset() __asm__ __volatile__ ("wdr")
+ 100:/opt/local/avr/include/avr/wdt.h **** 
+ 101:/opt/local/avr/include/avr/wdt.h **** #ifndef __DOXYGEN__
+ 102:/opt/local/avr/include/avr/wdt.h **** 
+ 103:/opt/local/avr/include/avr/wdt.h **** #if defined(WDP3)
+ 104:/opt/local/avr/include/avr/wdt.h **** # define _WD_PS3_MASK       _BV(WDP3)
+ 105:/opt/local/avr/include/avr/wdt.h **** #else
+ 106:/opt/local/avr/include/avr/wdt.h **** # define _WD_PS3_MASK       0x00
+ 107:/opt/local/avr/include/avr/wdt.h **** #endif
+ 108:/opt/local/avr/include/avr/wdt.h **** 
+ 109:/opt/local/avr/include/avr/wdt.h **** #if defined(WDTCSR)
+ 110:/opt/local/avr/include/avr/wdt.h **** #  define _WD_CONTROL_REG     WDTCSR
+ 111:/opt/local/avr/include/avr/wdt.h **** #elif defined(WDTCR)
+ 112:/opt/local/avr/include/avr/wdt.h **** #  define _WD_CONTROL_REG     WDTCR
+ 113:/opt/local/avr/include/avr/wdt.h **** #else
+ 114:/opt/local/avr/include/avr/wdt.h **** #  define _WD_CONTROL_REG     WDT
+ 115:/opt/local/avr/include/avr/wdt.h **** #endif
+ 116:/opt/local/avr/include/avr/wdt.h **** 
+ 117:/opt/local/avr/include/avr/wdt.h **** #if defined(WDTOE)
+ 118:/opt/local/avr/include/avr/wdt.h **** #define _WD_CHANGE_BIT      WDTOE
+ 119:/opt/local/avr/include/avr/wdt.h **** #else
+ 120:/opt/local/avr/include/avr/wdt.h **** #define _WD_CHANGE_BIT      WDCE
+ 121:/opt/local/avr/include/avr/wdt.h **** #endif
+ 122:/opt/local/avr/include/avr/wdt.h **** 
+ 123:/opt/local/avr/include/avr/wdt.h **** #endif	/* !__DOXYGEN__ */
+ 124:/opt/local/avr/include/avr/wdt.h **** 
+ 125:/opt/local/avr/include/avr/wdt.h **** 
+ 126:/opt/local/avr/include/avr/wdt.h **** /**
+ 127:/opt/local/avr/include/avr/wdt.h ****    \ingroup avr_watchdog
+ 128:/opt/local/avr/include/avr/wdt.h ****    Enable the watchdog timer, configuring it for expiry after
+ 129:/opt/local/avr/include/avr/wdt.h ****    \c timeout (which is a combination of the \c WDP0 through
+ 130:/opt/local/avr/include/avr/wdt.h ****    \c WDP2 bits to write into the \c WDTCR register; For those devices 
+ 131:/opt/local/avr/include/avr/wdt.h ****    that have a \c WDTCSR register, it uses the combination of the \c WDP0 
+ 132:/opt/local/avr/include/avr/wdt.h ****    through \c WDP3 bits).
+ 133:/opt/local/avr/include/avr/wdt.h **** 
+ 134:/opt/local/avr/include/avr/wdt.h ****    See also the symbolic constants \c WDTO_15MS et al.
+ 135:/opt/local/avr/include/avr/wdt.h **** */
+ 136:/opt/local/avr/include/avr/wdt.h **** 
+ 137:/opt/local/avr/include/avr/wdt.h **** 
+ 138:/opt/local/avr/include/avr/wdt.h **** #if defined(__AVR_XMEGA__)
+ 139:/opt/local/avr/include/avr/wdt.h **** 
+ 140:/opt/local/avr/include/avr/wdt.h **** /*
+ 141:/opt/local/avr/include/avr/wdt.h ****    wdt_enable(timeout) for xmega devices
+ 142:/opt/local/avr/include/avr/wdt.h **** ** write signature (CCP_IOREG_gc) that enables change of protected I/O
+ 143:/opt/local/avr/include/avr/wdt.h ****    registers to the CCP register
+ 144:/opt/local/avr/include/avr/wdt.h **** ** At the same time,
+ 145:/opt/local/avr/include/avr/wdt.h ****    1) set WDT change enable (WDT_CEN_bm)
+ 146:/opt/local/avr/include/avr/wdt.h ****    2) enable WDT (WDT_ENABLE_bm)
+ 147:/opt/local/avr/include/avr/wdt.h ****    3) set timeout (timeout)
+ 148:/opt/local/avr/include/avr/wdt.h **** ** Synchronization starts when ENABLE bit of WDT is set. So, wait till it
+ 149:/opt/local/avr/include/avr/wdt.h ****    finishes (SYNCBUSY of STATUS register is automatically cleared after the
+ 150:/opt/local/avr/include/avr/wdt.h ****    sync is finished).
+ 151:/opt/local/avr/include/avr/wdt.h **** */
+ 152:/opt/local/avr/include/avr/wdt.h **** #define wdt_enable(timeout) \
+ 153:/opt/local/avr/include/avr/wdt.h **** do { \
+ 154:/opt/local/avr/include/avr/wdt.h **** uint8_t temp; \
+ 155:/opt/local/avr/include/avr/wdt.h **** __asm__ __volatile__ (         \
+ 156:/opt/local/avr/include/avr/wdt.h ****     "in __tmp_reg__, %[rampd]"              "\n\t" \
+ 157:/opt/local/avr/include/avr/wdt.h ****     "out %[rampd], __zero_reg__"            "\n\t" \
+ 158:/opt/local/avr/include/avr/wdt.h ****     "out %[ccp_reg], %[ioreg_cen_mask]"     "\n\t" \
+ 159:/opt/local/avr/include/avr/wdt.h ****     "sts %[wdt_reg], %[wdt_enable_timeout]" "\n\t" \
+ 160:/opt/local/avr/include/avr/wdt.h ****     "1:lds %[tmp], %[wdt_status_reg]"       "\n\t" \
+ 161:/opt/local/avr/include/avr/wdt.h ****     "sbrc %[tmp], %[wdt_syncbusy_bit]"      "\n\t" \
+ 162:/opt/local/avr/include/avr/wdt.h ****     "rjmp 1b"                               "\n\t" \
+ 163:/opt/local/avr/include/avr/wdt.h ****     "out %[rampd], __tmp_reg__"             "\n\t" \
+ 164:/opt/local/avr/include/avr/wdt.h ****     : [tmp]                "=r" (temp) \
+ 165:/opt/local/avr/include/avr/wdt.h ****     : [rampd]              "I" (_SFR_IO_ADDR(RAMPD)),      \
+ 166:/opt/local/avr/include/avr/wdt.h ****       [ccp_reg]            "I" (_SFR_IO_ADDR(CCP)),        \
+ 167:/opt/local/avr/include/avr/wdt.h ****       [ioreg_cen_mask]     "r" ((uint8_t)CCP_IOREG_gc),     \
+ 168:/opt/local/avr/include/avr/wdt.h ****       [wdt_reg]            "n" (_SFR_MEM_ADDR(WDT_CTRL)),   \
+ 169:/opt/local/avr/include/avr/wdt.h ****       [wdt_enable_timeout] "r" ((uint8_t)(WDT_CEN_bm | WDT_ENABLE_bm | timeout)), \
+ 170:/opt/local/avr/include/avr/wdt.h ****       [wdt_status_reg]     "n" (_SFR_MEM_ADDR(WDT_STATUS)), \
+ 171:/opt/local/avr/include/avr/wdt.h ****       [wdt_syncbusy_bit]   "I" (WDT_SYNCBUSY_bm)            \
+ 172:/opt/local/avr/include/avr/wdt.h ****     : "r0" \
+ 173:/opt/local/avr/include/avr/wdt.h **** ); \
+ 174:/opt/local/avr/include/avr/wdt.h **** } while(0)
+ 175:/opt/local/avr/include/avr/wdt.h **** 
+ 176:/opt/local/avr/include/avr/wdt.h **** #define wdt_disable() \
+ 177:/opt/local/avr/include/avr/wdt.h **** __asm__ __volatile__ (  \
+ 178:/opt/local/avr/include/avr/wdt.h ****     "in __tmp_reg__, %[rampd]"          "\n\t" \
+ 179:/opt/local/avr/include/avr/wdt.h ****     "out %[rampd], __zero_reg__"        "\n\t" \
+ 180:/opt/local/avr/include/avr/wdt.h ****     "out %[ccp_reg], %[ioreg_cen_mask]" "\n\t" \
+ 181:/opt/local/avr/include/avr/wdt.h ****     "sts %[wdt_reg], %[disable_mask]"   "\n\t" \
+ 182:/opt/local/avr/include/avr/wdt.h ****     "out %[rampd], __tmp_reg__"         "\n\t" \
+ 183:/opt/local/avr/include/avr/wdt.h ****     : \
+ 184:/opt/local/avr/include/avr/wdt.h ****     : [rampd]             "I" (_SFR_IO_ADDR(RAMPD)),    \
+ 185:/opt/local/avr/include/avr/wdt.h ****       [ccp_reg]           "I" (_SFR_IO_ADDR(CCP)),      \
+ 186:/opt/local/avr/include/avr/wdt.h ****       [ioreg_cen_mask]    "r" ((uint8_t)CCP_IOREG_gc),   \
+ 187:/opt/local/avr/include/avr/wdt.h ****       [wdt_reg]           "n" (_SFR_MEM_ADDR(WDT_CTRL)), \
+ 188:/opt/local/avr/include/avr/wdt.h ****       [disable_mask]      "r" ((uint8_t)((~WDT_ENABLE_bm) | WDT_CEN_bm)) \
+ 189:/opt/local/avr/include/avr/wdt.h ****     : "r0" \
+ 190:/opt/local/avr/include/avr/wdt.h **** );
+ 191:/opt/local/avr/include/avr/wdt.h **** 
+ 192:/opt/local/avr/include/avr/wdt.h **** #elif defined(__AVR_TINY__)
+ 193:/opt/local/avr/include/avr/wdt.h **** 
+ 194:/opt/local/avr/include/avr/wdt.h **** #define wdt_enable(value) \
+ 195:/opt/local/avr/include/avr/wdt.h **** __asm__ __volatile__ ( \
+ 196:/opt/local/avr/include/avr/wdt.h ****     "in __tmp_reg__,__SREG__" "\n\t"  \
+ 197:/opt/local/avr/include/avr/wdt.h ****     "cli" "\n\t"  \
+ 198:/opt/local/avr/include/avr/wdt.h ****     "wdr" "\n\t"  \
+ 199:/opt/local/avr/include/avr/wdt.h ****     "out %[CCPADDRESS],%[SIGNATURE]" "\n\t"  \
+ 200:/opt/local/avr/include/avr/wdt.h ****     "out %[WDTREG],%[WDVALUE]" "\n\t"  \
+ 201:/opt/local/avr/include/avr/wdt.h ****     "out __SREG__,__tmp_reg__" "\n\t"  \
+ 202:/opt/local/avr/include/avr/wdt.h ****     : /* no outputs */  \
+ 203:/opt/local/avr/include/avr/wdt.h ****     : [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)),  \
+ 204:/opt/local/avr/include/avr/wdt.h ****       [SIGNATURE] "r" ((uint8_t)0xD8), \
+ 205:/opt/local/avr/include/avr/wdt.h ****       [WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)), \
+ 206:/opt/local/avr/include/avr/wdt.h ****       [WDVALUE] "r" ((uint8_t)((value & 0x08 ? _WD_PS3_MASK : 0x00) \
+ 207:/opt/local/avr/include/avr/wdt.h ****       | _BV(WDE) | (value & 0x07) )) \
+ 208:/opt/local/avr/include/avr/wdt.h ****     : "r16" \
+ 209:/opt/local/avr/include/avr/wdt.h **** )
+ 210:/opt/local/avr/include/avr/wdt.h **** 
+ 211:/opt/local/avr/include/avr/wdt.h **** #define wdt_disable() \
+ 212:/opt/local/avr/include/avr/wdt.h **** do { \
+ 213:/opt/local/avr/include/avr/wdt.h **** uint8_t temp_wd; \
+ 214:/opt/local/avr/include/avr/wdt.h **** __asm__ __volatile__ ( \
+ 215:/opt/local/avr/include/avr/wdt.h ****     "in __tmp_reg__,__SREG__" "\n\t"  \
+ 216:/opt/local/avr/include/avr/wdt.h ****     "cli" "\n\t"  \
+ 217:/opt/local/avr/include/avr/wdt.h ****     "wdr" "\n\t"  \
+ 218:/opt/local/avr/include/avr/wdt.h ****     "out %[CCPADDRESS],%[SIGNATURE]" "\n\t"  \
+ 219:/opt/local/avr/include/avr/wdt.h ****     "in  %[TEMP_WD],%[WDTREG]" "\n\t" \
+ 220:/opt/local/avr/include/avr/wdt.h ****     "cbr %[TEMP_WD],%[WDVALUE]" "\n\t" \
+ 221:/opt/local/avr/include/avr/wdt.h ****     "out %[WDTREG],%[TEMP_WD]" "\n\t" \
+ 222:/opt/local/avr/include/avr/wdt.h ****     "out __SREG__,__tmp_reg__" "\n\t" \
+ 223:/opt/local/avr/include/avr/wdt.h ****     : /*no output */ \
+ 224:/opt/local/avr/include/avr/wdt.h ****     : [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)), \
+ 225:/opt/local/avr/include/avr/wdt.h ****       [SIGNATURE] "r" ((uint8_t)0xD8), \
+ 226:/opt/local/avr/include/avr/wdt.h ****       [WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)), \
+ 227:/opt/local/avr/include/avr/wdt.h ****       [TEMP_WD] "d" (temp_wd), \
+ 228:/opt/local/avr/include/avr/wdt.h ****       [WDVALUE] "n" (1 << WDE) \
+ 229:/opt/local/avr/include/avr/wdt.h ****     : "r16" \
+ 230:/opt/local/avr/include/avr/wdt.h **** ); \
+ 231:/opt/local/avr/include/avr/wdt.h **** }while(0)
+ 232:/opt/local/avr/include/avr/wdt.h **** 
+ 233:/opt/local/avr/include/avr/wdt.h **** #elif defined(CCP)
+ 234:/opt/local/avr/include/avr/wdt.h **** 
+ 235:/opt/local/avr/include/avr/wdt.h **** static __inline__
+ 236:/opt/local/avr/include/avr/wdt.h **** __attribute__ ((__always_inline__))
+ 237:/opt/local/avr/include/avr/wdt.h **** void wdt_enable (const uint8_t value)
+ 238:/opt/local/avr/include/avr/wdt.h **** {
+ 239:/opt/local/avr/include/avr/wdt.h **** 	if (!_SFR_IO_REG_P (CCP) && !_SFR_IO_REG_P (_WD_CONTROL_REG))
+ 240:/opt/local/avr/include/avr/wdt.h **** 	{
+ 241:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 242:/opt/local/avr/include/avr/wdt.h **** 			"in __tmp_reg__,__SREG__" "\n\t"
+ 243:/opt/local/avr/include/avr/wdt.h **** 			"cli" "\n\t"
+ 244:/opt/local/avr/include/avr/wdt.h **** 			"wdr" "\n\t"
+ 245:/opt/local/avr/include/avr/wdt.h **** 			"sts %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 246:/opt/local/avr/include/avr/wdt.h **** 			"sts %[WDTREG],%[WDVALUE]" "\n\t"
+ 247:/opt/local/avr/include/avr/wdt.h **** 			"out __SREG__,__tmp_reg__" "\n\t"
+ 248:/opt/local/avr/include/avr/wdt.h **** 			: /* no outputs */
+ 249:/opt/local/avr/include/avr/wdt.h **** 			: [CCPADDRESS] "n" (_SFR_MEM_ADDR(CCP)),
+ 250:/opt/local/avr/include/avr/wdt.h **** 			[SIGNATURE] "r" ((uint8_t)0xD8),
+ 251:/opt/local/avr/include/avr/wdt.h **** 			[WDTREG] "n" (_SFR_MEM_ADDR(_WD_CONTROL_REG)),
+ 252:/opt/local/avr/include/avr/wdt.h **** 			[WDVALUE] "r" ((uint8_t)((value & 0x08 ? _WD_PS3_MASK : 0x00)
+ 253:/opt/local/avr/include/avr/wdt.h **** 				| _BV(WDE) | (value & 0x07) ))
+ 254:/opt/local/avr/include/avr/wdt.h **** 			: "r0"
+ 255:/opt/local/avr/include/avr/wdt.h **** 			);
+ 256:/opt/local/avr/include/avr/wdt.h **** 	}
+ 257:/opt/local/avr/include/avr/wdt.h **** 	else if (!_SFR_IO_REG_P (CCP) && _SFR_IO_REG_P (_WD_CONTROL_REG))
+ 258:/opt/local/avr/include/avr/wdt.h **** 	{
+ 259:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 260:/opt/local/avr/include/avr/wdt.h **** 			"in __tmp_reg__,__SREG__" "\n\t"
+ 261:/opt/local/avr/include/avr/wdt.h **** 			"cli" "\n\t"
+ 262:/opt/local/avr/include/avr/wdt.h **** 			"wdr" "\n\t"
+ 263:/opt/local/avr/include/avr/wdt.h **** 			"sts %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 264:/opt/local/avr/include/avr/wdt.h **** 			"out %[WDTREG],%[WDVALUE]" "\n\t"
+ 265:/opt/local/avr/include/avr/wdt.h **** 			"out __SREG__,__tmp_reg__" "\n\t"
+ 266:/opt/local/avr/include/avr/wdt.h **** 			: /* no outputs */
+ 267:/opt/local/avr/include/avr/wdt.h **** 			: [CCPADDRESS] "n" (_SFR_MEM_ADDR(CCP)),
+ 268:/opt/local/avr/include/avr/wdt.h **** 			[SIGNATURE] "r" ((uint8_t)0xD8),
+ 269:/opt/local/avr/include/avr/wdt.h **** 			[WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 270:/opt/local/avr/include/avr/wdt.h **** 			[WDVALUE] "r" ((uint8_t)((value & 0x08 ? _WD_PS3_MASK : 0x00)
+ 271:/opt/local/avr/include/avr/wdt.h **** 				| _BV(WDE) | (value & 0x07) ))
+ 272:/opt/local/avr/include/avr/wdt.h **** 			: "r0"
+ 273:/opt/local/avr/include/avr/wdt.h **** 			);
+ 274:/opt/local/avr/include/avr/wdt.h **** 	}
+ 275:/opt/local/avr/include/avr/wdt.h **** 	else if (_SFR_IO_REG_P (CCP) && !_SFR_IO_REG_P (_WD_CONTROL_REG))
+ 276:/opt/local/avr/include/avr/wdt.h **** 	{
+ 277:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 278:/opt/local/avr/include/avr/wdt.h **** 			"in __tmp_reg__,__SREG__" "\n\t"
+ 279:/opt/local/avr/include/avr/wdt.h **** 			"cli" "\n\t"
+ 280:/opt/local/avr/include/avr/wdt.h **** 			"wdr" "\n\t"
+ 281:/opt/local/avr/include/avr/wdt.h **** 			"out %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 282:/opt/local/avr/include/avr/wdt.h **** 			"sts %[WDTREG],%[WDVALUE]" "\n\t"
+ 283:/opt/local/avr/include/avr/wdt.h **** 			"out __SREG__,__tmp_reg__" "\n\t"
+ 284:/opt/local/avr/include/avr/wdt.h **** 			: /* no outputs */
+ 285:/opt/local/avr/include/avr/wdt.h **** 			: [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)),
+ 286:/opt/local/avr/include/avr/wdt.h **** 			[SIGNATURE] "r" ((uint8_t)0xD8),
+ 287:/opt/local/avr/include/avr/wdt.h **** 			[WDTREG] "n" (_SFR_MEM_ADDR(_WD_CONTROL_REG)),
+ 288:/opt/local/avr/include/avr/wdt.h **** 			[WDVALUE] "r" ((uint8_t)((value & 0x08 ? _WD_PS3_MASK : 0x00)
+ 289:/opt/local/avr/include/avr/wdt.h **** 				| _BV(WDE) | (value & 0x07) ))
+ 290:/opt/local/avr/include/avr/wdt.h **** 			: "r0"
+ 291:/opt/local/avr/include/avr/wdt.h **** 			);
+ 292:/opt/local/avr/include/avr/wdt.h **** 	}
+ 293:/opt/local/avr/include/avr/wdt.h **** 	else
+ 294:/opt/local/avr/include/avr/wdt.h ****  	{
+ 295:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 296:/opt/local/avr/include/avr/wdt.h **** 			"in __tmp_reg__,__SREG__" "\n\t"
+ 297:/opt/local/avr/include/avr/wdt.h **** 			"cli" "\n\t"
+ 298:/opt/local/avr/include/avr/wdt.h **** 			"wdr" "\n\t"
+ 299:/opt/local/avr/include/avr/wdt.h **** 			"out %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 300:/opt/local/avr/include/avr/wdt.h **** 			"out %[WDTREG],%[WDVALUE]" "\n\t"
+ 301:/opt/local/avr/include/avr/wdt.h **** 			"out __SREG__,__tmp_reg__" "\n\t"
+ 302:/opt/local/avr/include/avr/wdt.h **** 			: /* no outputs */
+ 303:/opt/local/avr/include/avr/wdt.h **** 			: [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)),
+ 304:/opt/local/avr/include/avr/wdt.h **** 			[SIGNATURE] "r" ((uint8_t)0xD8),
+ 305:/opt/local/avr/include/avr/wdt.h **** 			[WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 306:/opt/local/avr/include/avr/wdt.h **** 			[WDVALUE] "r" ((uint8_t)((value & 0x08 ? _WD_PS3_MASK : 0x00)
+ 307:/opt/local/avr/include/avr/wdt.h **** 				| _BV(WDE) | (value & 0x07) ))
+ 308:/opt/local/avr/include/avr/wdt.h **** 			: "r0"
+ 309:/opt/local/avr/include/avr/wdt.h **** 			);
+ 310:/opt/local/avr/include/avr/wdt.h **** 	}
+ 311:/opt/local/avr/include/avr/wdt.h **** }
+ 312:/opt/local/avr/include/avr/wdt.h **** 
+ 313:/opt/local/avr/include/avr/wdt.h **** static __inline__
+ 314:/opt/local/avr/include/avr/wdt.h **** __attribute__ ((__always_inline__))
+ 315:/opt/local/avr/include/avr/wdt.h **** void wdt_disable (void)
+ 316:/opt/local/avr/include/avr/wdt.h **** {
+ 317:/opt/local/avr/include/avr/wdt.h **** 	if (!_SFR_IO_REG_P (CCP) && !_SFR_IO_REG_P(_WD_CONTROL_REG))
+ 318:/opt/local/avr/include/avr/wdt.h **** 	{
+ 319:/opt/local/avr/include/avr/wdt.h ****         uint8_t temp_wd;
+ 320:/opt/local/avr/include/avr/wdt.h ****         __asm__ __volatile__ (
+ 321:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 322:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 323:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 324:/opt/local/avr/include/avr/wdt.h **** 				"sts %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 325:/opt/local/avr/include/avr/wdt.h **** 				"lds %[TEMP_WD],%[WDTREG]" "\n\t"
+ 326:/opt/local/avr/include/avr/wdt.h **** 				"cbr %[TEMP_WD],%[WDVALUE]" "\n\t"
+ 327:/opt/local/avr/include/avr/wdt.h **** 				"sts %[WDTREG],%[TEMP_WD]" "\n\t"
+ 328:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 329:/opt/local/avr/include/avr/wdt.h **** 				: /*no output */
+ 330:/opt/local/avr/include/avr/wdt.h **** 				: [CCPADDRESS] "n" (_SFR_MEM_ADDR(CCP)),
+ 331:/opt/local/avr/include/avr/wdt.h **** 				[SIGNATURE] "r" ((uint8_t)0xD8),
+ 332:/opt/local/avr/include/avr/wdt.h **** 				[WDTREG] "n" (_SFR_MEM_ADDR(_WD_CONTROL_REG)),
+ 333:/opt/local/avr/include/avr/wdt.h **** 				[TEMP_WD] "d" (temp_wd),
+ 334:/opt/local/avr/include/avr/wdt.h **** 				[WDVALUE] "n" (1 << WDE)
+ 335:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 336:/opt/local/avr/include/avr/wdt.h **** 				);
+ 337:/opt/local/avr/include/avr/wdt.h **** 	}
+ 338:/opt/local/avr/include/avr/wdt.h **** 	else if (!_SFR_IO_REG_P (CCP) && _SFR_IO_REG_P(_WD_CONTROL_REG))
+ 339:/opt/local/avr/include/avr/wdt.h **** 	{
+ 340:/opt/local/avr/include/avr/wdt.h ****         uint8_t temp_wd;
+ 341:/opt/local/avr/include/avr/wdt.h ****         __asm__ __volatile__ (
+ 342:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 343:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 344:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 345:/opt/local/avr/include/avr/wdt.h **** 				"sts %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 346:/opt/local/avr/include/avr/wdt.h **** 				"in %[TEMP_WD],%[WDTREG]" "\n\t"
+ 347:/opt/local/avr/include/avr/wdt.h **** 				"cbr %[TEMP_WD],%[WDVALUE]" "\n\t"
+ 348:/opt/local/avr/include/avr/wdt.h **** 				"out %[WDTREG],%[TEMP_WD]" "\n\t"
+ 349:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 350:/opt/local/avr/include/avr/wdt.h **** 				: /*no output */
+ 351:/opt/local/avr/include/avr/wdt.h **** 				: [CCPADDRESS] "n" (_SFR_MEM_ADDR(CCP)),
+ 352:/opt/local/avr/include/avr/wdt.h **** 				[SIGNATURE] "r" ((uint8_t)0xD8),
+ 353:/opt/local/avr/include/avr/wdt.h **** 				[WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 354:/opt/local/avr/include/avr/wdt.h **** 				[TEMP_WD] "d" (temp_wd),
+ 355:/opt/local/avr/include/avr/wdt.h **** 				[WDVALUE] "n" (1 << WDE)
+ 356:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 357:/opt/local/avr/include/avr/wdt.h **** 				);
+ 358:/opt/local/avr/include/avr/wdt.h **** 	}
+ 359:/opt/local/avr/include/avr/wdt.h **** 	else if (_SFR_IO_REG_P (CCP) && !_SFR_IO_REG_P(_WD_CONTROL_REG))
+ 360:/opt/local/avr/include/avr/wdt.h **** 	{
+ 361:/opt/local/avr/include/avr/wdt.h ****         uint8_t temp_wd;
+ 362:/opt/local/avr/include/avr/wdt.h ****         __asm__ __volatile__ (
+ 363:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 364:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 365:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 366:/opt/local/avr/include/avr/wdt.h **** 				"out %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 367:/opt/local/avr/include/avr/wdt.h **** 				"lds %[TEMP_WD],%[WDTREG]" "\n\t"
+ 368:/opt/local/avr/include/avr/wdt.h **** 				"cbr %[TEMP_WD],%[WDVALUE]" "\n\t"
+ 369:/opt/local/avr/include/avr/wdt.h **** 				"sts %[WDTREG],%[TEMP_WD]" "\n\t"
+ 370:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 371:/opt/local/avr/include/avr/wdt.h **** 				: /*no output */
+ 372:/opt/local/avr/include/avr/wdt.h **** 				: [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)),
+ 373:/opt/local/avr/include/avr/wdt.h **** 				[SIGNATURE] "r" ((uint8_t)0xD8),
+ 374:/opt/local/avr/include/avr/wdt.h **** 				[WDTREG] "n" (_SFR_MEM_ADDR(_WD_CONTROL_REG)),
+ 375:/opt/local/avr/include/avr/wdt.h **** 				[TEMP_WD] "d" (temp_wd),
+ 376:/opt/local/avr/include/avr/wdt.h **** 				[WDVALUE] "n" (1 << WDE)
+ 377:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 378:/opt/local/avr/include/avr/wdt.h **** 				);
+ 379:/opt/local/avr/include/avr/wdt.h **** 	}
+ 380:/opt/local/avr/include/avr/wdt.h **** 	else
+ 381:/opt/local/avr/include/avr/wdt.h **** 	{
+ 382:/opt/local/avr/include/avr/wdt.h ****         uint8_t temp_wd;
+ 383:/opt/local/avr/include/avr/wdt.h ****         __asm__ __volatile__ (
+ 384:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 385:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 386:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 387:/opt/local/avr/include/avr/wdt.h **** 				"out %[CCPADDRESS],%[SIGNATURE]" "\n\t"
+ 388:/opt/local/avr/include/avr/wdt.h **** 				"in %[TEMP_WD],%[WDTREG]" "\n\t"
+ 389:/opt/local/avr/include/avr/wdt.h **** 				"cbr %[TEMP_WD],%[WDVALUE]" "\n\t"
+ 390:/opt/local/avr/include/avr/wdt.h **** 				"out %[WDTREG],%[TEMP_WD]" "\n\t"
+ 391:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 392:/opt/local/avr/include/avr/wdt.h **** 				: /*no output */
+ 393:/opt/local/avr/include/avr/wdt.h **** 				: [CCPADDRESS] "I" (_SFR_IO_ADDR(CCP)),
+ 394:/opt/local/avr/include/avr/wdt.h **** 				[SIGNATURE] "r" ((uint8_t)0xD8),
+ 395:/opt/local/avr/include/avr/wdt.h **** 				[WDTREG] "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 396:/opt/local/avr/include/avr/wdt.h **** 				[TEMP_WD] "d" (temp_wd),
+ 397:/opt/local/avr/include/avr/wdt.h **** 				[WDVALUE] "n" (1 << WDE)
+ 398:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 399:/opt/local/avr/include/avr/wdt.h **** 				);
+ 400:/opt/local/avr/include/avr/wdt.h **** 	}
+ 401:/opt/local/avr/include/avr/wdt.h **** }
+ 402:/opt/local/avr/include/avr/wdt.h **** 
+ 403:/opt/local/avr/include/avr/wdt.h **** #else
+ 404:/opt/local/avr/include/avr/wdt.h **** 
+ 405:/opt/local/avr/include/avr/wdt.h **** static __inline__
+ 406:/opt/local/avr/include/avr/wdt.h **** __attribute__ ((__always_inline__))
+ 407:/opt/local/avr/include/avr/wdt.h **** void wdt_enable (const uint8_t value)
+ 408:/opt/local/avr/include/avr/wdt.h **** {
+ 409:/opt/local/avr/include/avr/wdt.h **** 	if (_SFR_IO_REG_P (_WD_CONTROL_REG))
+ 410:/opt/local/avr/include/avr/wdt.h **** 	{
+ 411:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 412:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 413:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 414:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 415:/opt/local/avr/include/avr/wdt.h **** 				"out %0, %1" "\n\t"
+ 416:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 417:/opt/local/avr/include/avr/wdt.h **** 				"out %0, %2" "\n \t"
+ 418:/opt/local/avr/include/avr/wdt.h **** 				: /* no outputs */
+ 419:/opt/local/avr/include/avr/wdt.h **** 				: "I" (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 420:/opt/local/avr/include/avr/wdt.h **** 				"r" ((uint8_t)(_BV(_WD_CHANGE_BIT) | _BV(WDE))),
+ 421:/opt/local/avr/include/avr/wdt.h **** 				"r" ((uint8_t) ((value & 0x08 ? _WD_PS3_MASK : 0x00) |
+ 422:/opt/local/avr/include/avr/wdt.h **** 						_BV(WDE) | (value & 0x07)) )
+ 423:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 424:/opt/local/avr/include/avr/wdt.h **** 		);
+ 425:/opt/local/avr/include/avr/wdt.h **** 	}
+ 426:/opt/local/avr/include/avr/wdt.h **** 	else
+ 427:/opt/local/avr/include/avr/wdt.h **** 	{
+ 428:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 429:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__" "\n\t"
+ 430:/opt/local/avr/include/avr/wdt.h **** 				"cli" "\n\t"
+ 431:/opt/local/avr/include/avr/wdt.h **** 				"wdr" "\n\t"
+ 432:/opt/local/avr/include/avr/wdt.h **** 				"sts %0, %1" "\n\t"
+ 433:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__" "\n\t"
+ 434:/opt/local/avr/include/avr/wdt.h **** 				"sts %0, %2" "\n \t"
+ 435:/opt/local/avr/include/avr/wdt.h **** 				: /* no outputs */
+ 436:/opt/local/avr/include/avr/wdt.h **** 				: "n" (_SFR_MEM_ADDR(_WD_CONTROL_REG)),
+ 437:/opt/local/avr/include/avr/wdt.h **** 				"r" ((uint8_t)(_BV(_WD_CHANGE_BIT) | _BV(WDE))),
+ 438:/opt/local/avr/include/avr/wdt.h **** 				"r" ((uint8_t) ((value & 0x08 ? _WD_PS3_MASK : 0x00) |
+ 439:/opt/local/avr/include/avr/wdt.h **** 						_BV(WDE) | (value & 0x07)) )
+ 440:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 441:/opt/local/avr/include/avr/wdt.h **** 		);
+ 442:/opt/local/avr/include/avr/wdt.h **** 	}
+ 443:/opt/local/avr/include/avr/wdt.h **** }
+ 444:/opt/local/avr/include/avr/wdt.h **** 
+ 445:/opt/local/avr/include/avr/wdt.h **** static __inline__
+ 446:/opt/local/avr/include/avr/wdt.h **** __attribute__ ((__always_inline__))
+ 447:/opt/local/avr/include/avr/wdt.h **** void wdt_disable (void)
+ 448:/opt/local/avr/include/avr/wdt.h **** {
+ 449:/opt/local/avr/include/avr/wdt.h **** 	if (_SFR_IO_REG_P (_WD_CONTROL_REG))
+ 450:/opt/local/avr/include/avr/wdt.h **** 	{
+ 451:/opt/local/avr/include/avr/wdt.h ****         uint8_t register temp_reg;
+ 452:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 453:/opt/local/avr/include/avr/wdt.h **** 				"in __tmp_reg__,__SREG__"    "\n\t"
+ 454:/opt/local/avr/include/avr/wdt.h **** 				"cli"                        "\n\t"
+ 455:/opt/local/avr/include/avr/wdt.h **** 				"wdr"                        "\n\t"
+ 456:/opt/local/avr/include/avr/wdt.h **** 				"in  %[TEMPREG],%[WDTREG]"   "\n\t"
+ 457:/opt/local/avr/include/avr/wdt.h **** 				"ori %[TEMPREG],%[WDCE_WDE]" "\n\t"
+ 458:/opt/local/avr/include/avr/wdt.h **** 				"out %[WDTREG],%[TEMPREG]"   "\n\t"
+ 459:/opt/local/avr/include/avr/wdt.h **** 				"out %[WDTREG],__zero_reg__" "\n\t"
+ 460:/opt/local/avr/include/avr/wdt.h **** 				"out __SREG__,__tmp_reg__"   "\n\t"
+ 461:/opt/local/avr/include/avr/wdt.h **** 				: [TEMPREG] "=d" (temp_reg)
+ 462:/opt/local/avr/include/avr/wdt.h **** 				: [WDTREG]  "I"  (_SFR_IO_ADDR(_WD_CONTROL_REG)),
+ 463:/opt/local/avr/include/avr/wdt.h **** 				[WDCE_WDE]  "n"  ((uint8_t)(_BV(_WD_CHANGE_BIT) | _BV(WDE)))
+ 464:/opt/local/avr/include/avr/wdt.h **** 				: "r0"
+ 465:/opt/local/avr/include/avr/wdt.h **** 		);
+ 466:/opt/local/avr/include/avr/wdt.h **** 	}
+ 467:/opt/local/avr/include/avr/wdt.h **** 	else
+ 468:/opt/local/avr/include/avr/wdt.h **** 	{
+ 469:/opt/local/avr/include/avr/wdt.h ****         uint8_t register temp_reg;
+ 470:/opt/local/avr/include/avr/wdt.h **** 		__asm__ __volatile__ (
+ 119               		.loc 2 470 0
+ 120               	/* #APP */
+ 121               	 ;  470 "/opt/local/avr/include/avr/wdt.h" 1
+ 122 003a 0FB6      		in __tmp_reg__,__SREG__
+ 123 003c F894      		cli
+ 124 003e A895      		wdr
+ 125 0040 8091 6000 		lds r24,96
+ 126 0044 8861      		ori r24,24
+ 127 0046 8093 6000 		sts 96,r24
+ 128 004a 1092 6000 		sts 96,__zero_reg__
+ 129 004e 0FBE      		out __SREG__,__tmp_reg__
+ 130               		
+ 131               	 ;  0 "" 2
+ 132               	.LVL3:
+ 133               	/* #NOAPP */
+ 134               	.L2:
+ 135               	/* epilogue start */
+ 136               	.LBE18:
+ 137               	.LBE17:
+ 138               	.LBE16:
+ 139               	.LBE15:
+  99:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #ifdef NO_SUSPEND_POWER_DOWN
+ 100:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     ;
+ 101:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #elif defined(SUSPEND_MODE_NOPOWERSAVE)
+ 102:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     ;
+ 103:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #elif defined(SUSPEND_MODE_STANDBY)
+ 104:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     standby();
+ 105:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #elif defined(SUSPEND_MODE_IDLE)
+ 106:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     idle();
+ 107:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #else
+ 108:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     power_down(WDTO_15MS);
+ 109:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #endif
+ 110:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+ 140               		.loc 1 110 0
+ 141 0050 0895      		ret
+ 142               		.cfi_endproc
+ 143               	.LFE112:
+ 145               		.section	.text.suspend_wakeup_condition,"ax",@progbits
+ 146               	.global	suspend_wakeup_condition
+ 148               	suspend_wakeup_condition:
+ 149               	.LFB113:
+ 111:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+ 112:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** bool suspend_wakeup_condition(void)
+ 113:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+ 150               		.loc 1 113 0
+ 151               		.cfi_startproc
+ 152 0000 CF93      		push r28
+ 153               	.LCFI0:
+ 154               		.cfi_def_cfa_offset 3
+ 155               		.cfi_offset 28, -2
+ 156               	/* prologue: function */
+ 157               	/* frame size = 0 */
+ 158               	/* stack size = 1 */
+ 159               	.L__stack_usage = 1
+ 114:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     matrix_power_up();
+ 160               		.loc 1 114 0
+ 161 0002 0E94 0000 		call matrix_power_up
+ 162               	.LVL4:
+ 115:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     matrix_scan();
+ 163               		.loc 1 115 0
+ 164 0006 0E94 0000 		call matrix_scan
+ 165               	.LVL5:
+ 116:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     matrix_power_down();
+ 166               		.loc 1 116 0
+ 167 000a 0E94 0000 		call matrix_power_down
+ 168               	.LVL6:
+ 169               	.LBB19:
+ 117:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     for (uint8_t r = 0; r < MATRIX_ROWS; r++) {
+ 170               		.loc 1 117 0
+ 171 000e C0E0      		ldi r28,0
+ 172               	.LVL7:
+ 173               	.L9:
+ 118:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****         if (matrix_get_row(r)) return true;
+ 174               		.loc 1 118 0
+ 175 0010 8C2F      		mov r24,r28
+ 176 0012 0E94 0000 		call matrix_get_row
+ 177               	.LVL8:
+ 178 0016 8111      		cpse r24,__zero_reg__
+ 179 0018 00C0      		rjmp .L10
+ 117:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     for (uint8_t r = 0; r < MATRIX_ROWS; r++) {
+ 180               		.loc 1 117 0 discriminator 2
+ 181 001a CF5F      		subi r28,lo8(-(1))
+ 182               	.LVL9:
+ 183 001c C131      		cpi r28,lo8(17)
+ 184 001e 01F4      		brne .L9
+ 185               	.L7:
+ 186               	/* epilogue start */
+ 187               	.LBE19:
+ 119:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     }
+ 120:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     return false;
+ 121:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+ 188               		.loc 1 121 0
+ 189 0020 CF91      		pop r28
+ 190               	.LVL10:
+ 191 0022 0895      		ret
+ 192               	.LVL11:
+ 193               	.L10:
+ 194               	.LBB20:
+ 118:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****         if (matrix_get_row(r)) return true;
+ 195               		.loc 1 118 0
+ 196 0024 81E0      		ldi r24,lo8(1)
+ 197 0026 00C0      		rjmp .L7
+ 198               	.LBE20:
+ 199               		.cfi_endproc
+ 200               	.LFE113:
+ 202               		.section	.text.suspend_wakeup_init,"ax",@progbits
+ 203               	.global	suspend_wakeup_init
+ 205               	suspend_wakeup_init:
+ 206               	.LFB114:
+ 122:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+ 123:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** // run immediately after wakeup
+ 124:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** void suspend_wakeup_init(void)
+ 125:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+ 207               		.loc 1 125 0
+ 208               		.cfi_startproc
+ 209               	/* prologue: function */
+ 210               	/* frame size = 0 */
+ 211               	/* stack size = 0 */
+ 212               	.L__stack_usage = 0
+ 126:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // clear keyboard state
+ 127:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     matrix_clear();
+ 213               		.loc 1 127 0
+ 214 0000 0E94 0000 		call matrix_clear
+ 215               	.LVL12:
+ 128:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     clear_keyboard();
+ 216               		.loc 1 128 0
+ 217 0004 0C94 0000 		jmp clear_keyboard
+ 218               	.LVL13:
+ 219               		.cfi_endproc
+ 220               	.LFE114:
+ 222               		.section	.text.__vector_12,"ax",@progbits
+ 223               	.global	__vector_12
+ 225               	__vector_12:
+ 226               	.LFB115:
+ 129:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #ifdef BACKLIGHT_ENABLE
+ 130:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     backlight_init();
+ 131:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #endif
+ 132:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+ 133:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** 
+ 134:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** #ifndef NO_SUSPEND_POWER_DOWN
+ 135:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** /* watchdog timeout */
+ 136:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** ISR(WDT_vect)
+ 137:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** {
+ 227               		.loc 1 137 0
+ 228               		.cfi_startproc
+ 229 0000 1F92      		push r1
+ 230               	.LCFI1:
+ 231               		.cfi_def_cfa_offset 3
+ 232               		.cfi_offset 1, -2
+ 233 0002 0F92      		push r0
+ 234               	.LCFI2:
+ 235               		.cfi_def_cfa_offset 4
+ 236               		.cfi_offset 0, -3
+ 237 0004 0FB6      		in r0,__SREG__
+ 238 0006 0F92      		push r0
+ 239 0008 1124      		clr __zero_reg__
+ 240 000a 8F93      		push r24
+ 241               	.LCFI3:
+ 242               		.cfi_def_cfa_offset 5
+ 243               		.cfi_offset 24, -4
+ 244 000c 9F93      		push r25
+ 245               	.LCFI4:
+ 246               		.cfi_def_cfa_offset 6
+ 247               		.cfi_offset 25, -5
+ 248 000e AF93      		push r26
+ 249               	.LCFI5:
+ 250               		.cfi_def_cfa_offset 7
+ 251               		.cfi_offset 26, -6
+ 252 0010 BF93      		push r27
+ 253               	.LCFI6:
+ 254               		.cfi_def_cfa_offset 8
+ 255               		.cfi_offset 27, -7
+ 256               	/* prologue: Signal */
+ 257               	/* frame size = 0 */
+ 258               	/* stack size = 7 */
+ 259               	.L__stack_usage = 7
+ 138:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     // compensate timer for sleep
+ 139:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     switch (wdt_timeout) {
+ 260               		.loc 1 139 0
+ 261 0012 8091 0000 		lds r24,wdt_timeout
+ 262 0016 8111      		cpse r24,__zero_reg__
+ 263 0018 00C0      		rjmp .L13
+ 140:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****         case WDTO_15MS:
+ 141:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****             timer_count += 15 + 2;  // WDTO_15MS + 2(from observation)
+ 264               		.loc 1 141 0
+ 265 001a 8091 0000 		lds r24,timer_count
+ 266 001e 9091 0000 		lds r25,timer_count+1
+ 267 0022 A091 0000 		lds r26,timer_count+2
+ 268 0026 B091 0000 		lds r27,timer_count+3
+ 269 002a 4196      		adiw r24,17
+ 270 002c A11D      		adc r26,__zero_reg__
+ 271 002e B11D      		adc r27,__zero_reg__
+ 272 0030 8093 0000 		sts timer_count,r24
+ 273 0034 9093 0000 		sts timer_count+1,r25
+ 274 0038 A093 0000 		sts timer_count+2,r26
+ 275 003c B093 0000 		sts timer_count+3,r27
+ 276               	.L13:
+ 277               	/* epilogue start */
+ 142:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****             break;
+ 143:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****         default:
+ 144:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****             ;
+ 145:/users/hunter/downloads/tmk_core/common/avr/suspend.c ****     }
+ 146:/users/hunter/downloads/tmk_core/common/avr/suspend.c **** }
+ 278               		.loc 1 146 0
+ 279 0040 BF91      		pop r27
+ 280 0042 AF91      		pop r26
+ 281 0044 9F91      		pop r25
+ 282 0046 8F91      		pop r24
+ 283 0048 0F90      		pop r0
+ 284 004a 0FBE      		out __SREG__,r0
+ 285 004c 0F90      		pop r0
+ 286 004e 1F90      		pop r1
+ 287 0050 1895      		reti
+ 288               		.cfi_endproc
+ 289               	.LFE115:
+ 291               		.section	.bss.wdt_timeout,"aw",@nobits
+ 294               	wdt_timeout:
+ 295 0000 00        		.zero	1
+ 296               		.text
+ 297               	.Letext0:
+ 298               		.file 3 "/opt/local/avr/include/stdint.h"
+ 299               		.file 4 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../Std
+ 300               		.file 5 "/users/hunter/downloads/tmk_core/common/timer.h"
+ 301               		.file 6 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../Dev
+ 302               		.file 7 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/USBTask.h"
+ 303               		.file 8 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/HostStandar
+ 304               		.file 9 "/opt/local/avr/include/stdio.h"
+ 305               		.file 10 "/users/hunter/downloads/tmk_core/common/report.h"
+ 306               		.file 11 "/users/hunter/downloads/tmk_core/common/host_driver.h"
+ 307               		.file 12 "/users/hunter/downloads/tmk_core/common/host.h"
+ 308               		.file 13 "/users/hunter/downloads/tmk_core/protocol/lufa/lufa.h"
+ 309               		.file 14 "/users/hunter/downloads/tmk_core/common/matrix.h"
+ 310               		.file 15 "/users/hunter/downloads/tmk_core/common/action.h"
+ 311               		.file 16 "/users/hunter/downloads/tmk_core/protocol/lufa/LUFA-git/LUFA/Drivers/USB/Core/AVR8/../De
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 suspend.c
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:2      *ABS*:000000000000003e __SP_H__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:3      *ABS*:000000000000003d __SP_L__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:4      *ABS*:000000000000003f __SREG__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:5      *ABS*:0000000000000000 __tmp_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:6      *ABS*:0000000000000001 __zero_reg__
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:13     .text.suspend_idle:0000000000000000 suspend_idle
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:60     .text.suspend_power_down:0000000000000000 suspend_power_down
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:294    .bss.wdt_timeout:0000000000000000 wdt_timeout
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:148    .text.suspend_wakeup_condition:0000000000000000 suspend_wakeup_condition
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:205    .text.suspend_wakeup_init:0000000000000000 suspend_wakeup_init
+/var/folders/qj/kb_cqn1j20vbbrqdphlhjt3c0000gn/T//ccXI7REt.s:225    .text.__vector_12:0000000000000000 __vector_12
+
+UNDEFINED SYMBOLS
+USB_DeviceState
+matrix_power_up
+matrix_scan
+matrix_power_down
+matrix_get_row
+matrix_clear
+clear_keyboard
+timer_count
+__do_clear_bss
