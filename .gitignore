@@ -1,0 +1,11 @@
+tmk_core/
+tmk_keyboard/
+.vscode/
+.dep/
+obj_terminal_lufa/
+*.eep
+*.elf
+*.hex
+*.lss
+*.map
+*.sym
