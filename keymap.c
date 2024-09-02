@@ -91,7 +91,7 @@ const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * |-------| |-----------------------------------------------------------| ,-----------. |---------------|
      * |Lef|Rig| |Shif|  \|  Z|  X|  C|  V|  B|  N|  M|  ,|  ,|  /|Shift     | |Lef|Dow|Rig| |  1|  2|  3|   |
      * |-------| |-----------------------------------------------------------| `-----------' |-----------|Ent|
-     * |Pus|CpL| |Ctrl|    |Alt |          Space              |Alt |    |Ctrl|     |Dow|     |      0|  .|   |
+     * |Non|CpL| |Ctrl|    |Alt |          Space              |Alt |    |Ctrl|     |Dow|     |      0|  .|   |
      * `-------' `----'    `---------------------------------------'    `----'     `---'     `---------------'
      */
 
@@ -103,7 +103,7 @@ const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     VOLD,VOLU,  TAB, Q,   W,   E,   R,   T,   Y,   U,   I,   O,   P,   LBRC,RBRC,     BSLS,  DEL, END, PGDN,  P7,  P8,  P9,  PPLS,
     MPRV, MNXT, LCTL,A,   S,   D,   F,   G,   H,   J,   K,   L,   SCLN,QUOT,     NUHS,ENT,        UP,         P4,  P5,  P6,  PMNS,
     BTLD, CAPS,  LSFT, NO, Z,   X,   C,   V,   B,   N,   M,   COMM,DOT, SLSH,     RO,  RSFT,  LEFT,DOWN,RGHT,  P1,  P2,  P3,  PENT,
-    FN1,  FN2,  LCTL,     LALT,               SPC,                          FN0,     RGUI,       DOWN,       NO,  P0,  PDOT,NO
+    NO,   FN2,   LCTL,     LALT,               SPC,                          FN0,     RGUI,       DOWN,        NO,  P0,  PDOT,NO
     ),
 
      /* Blank
