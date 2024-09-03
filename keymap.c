@@ -83,15 +83,15 @@ const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      *               |F1 |F2 |F3 |F4 |F5 |F6 |F7 |F8 |F9 |F10|F11|F12|
      *               `-----------------------------------------------' 
      * ,-------. ,-----------------------------------------------------------. ,-----------. ,---------------.
-     * |Pla|Esc| |  `|  1|  2|  3|  4|  5|  6|  7|  8|  9|  0|  -|  =|  \|BS | |Ins|Hom|PgU| |NmL|  /|  *|PrS|
+     * |Pla|Esc| |  `|  1|  2|  3|  4|  5|  6|  7|  8|  9|  0|  -|  =|    BS | |Ins|Hom|PgU| |NmL|  /|  *|PrS|
      * |-------| |-----------------------------------------------------------| |-----------| |---------------|
      * |VlD|VlU| |Tab  |  Q|  W|  E|  R|  T|  Y|  U|  I|  O|  P|  [|  ]|    \| |Del|End|PgD| |  7|  8|  9|  +|
      * |-------| |-----------------------------------------------------------| `-----------' |-----------|---|
-     * |Prv|Nxt| |CapsLo|  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '|  #|Retu|     |Up |     |  4|  5|  6|  -|
+     * |Prv|Nxt| |Ctrl  |  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '|  Return|     |Up |     |  4|  5|  6|  -|
      * |-------| |-----------------------------------------------------------| ,-----------. |---------------|
-     * |Lef|Rig| |Shif|  \|  Z|  X|  C|  V|  B|  N|  M|  ,|  ,|  /|Shift     | |Lef|Dow|Rig| |  1|  2|  3|   |
+     * |Fn1|Fn2| |Shift   |  Z|  X|  C|  V|  B|  N|  M|  ,|  ,|  /|Shift     | |Lef|Dow|Rig| |  1|  2|  3|   |
      * |-------| |-----------------------------------------------------------| `-----------' |-----------|Ent|
-     * |Non|CpL| |Ctrl|    |Alt |          Space              |Alt |    |Ctrl|     |Dow|     |      0|  .|   |
+     * |Non|CpL| |Ctrl|    |Alt |          Space              |Fn0 |    |RGui|     |Dow|     |      0|  .|   |
      * `-------' `----'    `---------------------------------------'    `----'     `---'     `---------------'
      */
 
@@ -102,8 +102,8 @@ const uint8_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     MPLY,ESC,   GRV, 1,   2,   3,   4,   5,   6,   7,   8,   9,   0,   MINS,EQL, NO,  BSPC,  INS, HOME,PGUP,  NLCK,PSLS,PAST,PSCR,
     VOLD,VOLU,  TAB, Q,   W,   E,   R,   T,   Y,   U,   I,   O,   P,   LBRC,RBRC,     BSLS,  DEL, END, PGDN,  P7,  P8,  P9,  PPLS,
     MPRV, MNXT, LCTL,A,   S,   D,   F,   G,   H,   J,   K,   L,   SCLN,QUOT,     NUHS,ENT,        UP,         P4,  P5,  P6,  PMNS,
-    BTLD, CAPS,  LSFT, NO, Z,   X,   C,   V,   B,   N,   M,   COMM,DOT, SLSH,     RO,  RSFT,  LEFT,DOWN,RGHT,  P1,  P2,  P3,  PENT,
-    NO,   FN2,   LCTL,     LALT,               SPC,                          FN0,     RGUI,       DOWN,        NO,  P0,  PDOT,NO
+    FN1, FN2,  LSFT, NO, Z,   X,   C,   V,   B,   N,   M,   COMM,DOT, SLSH,     RO,  RSFT,  LEFT,DOWN,RGHT,  P1,  P2,  P3,  PENT,
+    NO,   CAPS,   LCTL,     LALT,               SPC,                          FN0,     RGUI,       DOWN,        NO,  P0,  PDOT,NO
     ),
 
      /* Blank
