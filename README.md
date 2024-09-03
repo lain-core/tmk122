@@ -4,10 +4,25 @@ This is a personalized layout based on TMK's 122 terminal usb converter. You may
 Source code: https://github.com/tmk/tmk_keyboard
 Article: http://geekhack.org/index.php?topic=27272.0
 
+## PREREQ
+`dfu-programmer` or [teensy loader](https://www.pjrc.com/teensy/loader.html) to program chip
+`avr-gcc` and `avr-libc` to build the firmware
+
 ## BUILD
-`git clone https://github.com/hunterking/tmk122.git`
-`git clone https://github.com/tmk/tmk_core.git`
+`git clone https://github.com/hunterking/tmk122.git && cd tmk122` 
+`git clone --recurse-submodules https://github.com/tmk/tmk_core.git`
 `make`
+
+## FLASH
+First, set the teensy to bootloader mode by pressing the button.
+
+### Using dfu-programmer
+`dfu-programmer atmega32u4 erase`
+`dfu-programmer atmega32u4 flash terminal_lufa.hex`
+`dfu-programmer atmega32u4 reset`
+
+### Using the teensy loader
+Click the page icon and find the target `.hex` file. Push the reset button on the board, and then click the right-facing arrow icon to flash.
 
 ## RESOURCE
 * Soarer's Converter: http://geekhack.org/index.php?topic=17458.0
